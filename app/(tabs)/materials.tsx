@@ -1,5 +1,6 @@
 // app/(tabs)/materials.tsx
 import React, { useState } from 'react';
+import { ImageBackground } from 'react-native';
 import {
   View,
   Text,
@@ -41,13 +42,19 @@ export default function MaterialsScreen() {
       <View style={styles.contentWrapper}>
         {/* 1. 상단 헤더 */}
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>🌿 재료 도감</Text>
+          <Text style={styles.headerTitle}> 가방 </Text>
         </View>
 
-        {/* 2. 🏛️ 상단 선택 재료 인스펙터 */}
-        <View style={styles.matShowcaseBox}>
-          <View style={styles.matShowcaseTop}>
-            <View style={styles.matLargeIconFrame}>
+        {/* 2. 🏛️ 상단 아치 쇼케이스*/}
+        <ImageBackground
+          source={require('../../assets/images/bg_arch.png')} // 이미지 경로에 맞게 지정
+          style={styles.matShowcaseBackground}
+          imageStyle={styles.matShowcaseBackgroundImage}
+          resizeMode="stretch"
+        >
+          <View style={styles.matShowcaseBox}>
+            <View style={styles.matShowcaseTop}>
+              <View style={styles.matLargeIconFrame}>
               {selectedImage ? (
                 <Image source={selectedImage} style={styles.matLargeImage} resizeMode="contain" />
               ) : (
@@ -60,54 +67,64 @@ export default function MaterialsScreen() {
                 <Text style={styles.matGradeText}>[{selectedMat.grade}]</Text>
               </View>
               <Text style={styles.matShowcaseName}>{selectedMat.name}</Text>
-              <Text style={styles.matOriginalName}>실제 성분: {detail.original}</Text>
+              <Text style={styles.matOriginalName}>성분: {detail.original}</Text>
             </View>
           </View>
+        </View>
+        </ImageBackground>
 
+        {/* 3. 재료 효능 설명 박스 */}
+        <ImageBackground
+          source={require('../../assets/images/bg_desc_material.png')}
+          style={styles.matDescBackground}
+          imageStyle={styles.matDescBackgroundImage}
+          resizeMode="stretch"
+        >
           <View style={styles.matDescBox}>
-            <Text style={styles.matDescLabel}>효능 & 역할</Text>
+            <Text style={styles.matDescLabel}>효능</Text>
             <Text style={styles.matDescText}>{detail.desc}</Text>
           </View>
-        </View>
+        </ImageBackground>
 
-        {/* 3. 🗃️ 하단 15종 재료 인벤토리 그리드 (4열) */}
-        <Text style={styles.gridSectionHeading}>보유 재료 목록</Text>
-        <ScrollView contentContainerStyle={styles.matGridScroll} showsVerticalScrollIndicator={false}>
-          {MOCK_MATERIALS.map((item) => {
-            const isSelected = selectedMat.id === item.id;
-            const matImage = getMaterialImage(item.id);
+{/* 4.️ 하단 15종 재료 인벤토리 그리드 (4열) */}
+<ScrollView contentContainerStyle={styles.matGridScroll} showsVerticalScrollIndicator={false}>
+  {MOCK_MATERIALS.map((item) => {
+    const isSelected = selectedMat.id === item.id;
+    const matImage = getMaterialImage(item.id);
 
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={[styles.matCardSlot, isSelected && styles.matCardSlotSelected]}
-                onPress={() => setSelectedMat(item)}
-                activeOpacity={0.8}
-              >
-                {/* 📌 우측 상단 수량 뱃지 */}
-                <View style={styles.matCountBadge}>
-                  <Text style={styles.matCountText}>x{item.count}</Text>
-                </View>
+    return (
+      // 💡 1. 25% 가로폭을 고정해주는 바깥 래퍼 (key는 여기로 이동)
+      <View key={item.id} style={styles.matCardSlotWrapper}>
+        <TouchableOpacity
+          style={[styles.matCardSlot, isSelected && styles.matCardSlotSelected]}
+          onPress={() => setSelectedMat(item)}
+          activeOpacity={0.8}
+        >
+          {/* 📌 우측 상단 수량 뱃지 (기존 동일) */}
+          <View style={styles.matCountBadge}>
+            <Text style={styles.matCountText}>x{item.count}</Text>
+          </View>
 
-                {/* 🖼️ 중앙 대형 도트 이미지 영역 */}
-                <View style={styles.matImageCenterArea}>
-                  {matImage ? (
-                    <Image source={matImage} style={styles.matSlotImage} resizeMode="contain" />
-                  ) : (
-                    <Text style={styles.matSlotIcon}>{item.icon}</Text>
-                  )}
-                </View>
+          {/* 🖼️ 중앙 대형 도트 이미지 영역 (기존 동일) */}
+          <View style={styles.matImageCenterArea}>
+            {matImage ? (
+              <Image source={matImage} style={styles.matSlotImage} resizeMode="contain" />
+            ) : (
+              <Text style={styles.matSlotIcon}>{item.icon}</Text>
+            )}
+          </View>
 
-                {/* 🏷️ 하단 재료명 */}
-                <View style={styles.matNameBottomBar}>
-                  <Text style={styles.matSlotName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          {/* 🏷️ 하단 재료명 (기존 동일) */}
+          <View style={styles.matNameBottomBar}>
+            <Text style={styles.matSlotName} numberOfLines={1}>
+              {item.name}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  })}
+</ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -136,18 +153,37 @@ const styles = StyleSheet.create({
   },
 
   // 🏛️ 상단 인스펙터
-  matShowcaseBox: {
-    backgroundColor: '#1C142A',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#594483',
-    padding: 14,
-    marginBottom: 14,
+  matShowcaseBackground: {
+    width: '100%', 
+    alignSelf: 'center',
+    borderRadius: 1,
+    height: 190,
+    marginBottom: 20, 
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
+  matShowcaseBackgroundImage: {
+    borderRadius: 0,
+    resizeMode: 'stretch',
+  },
+    
+  matShowcaseBox: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    marginBottom: 0,
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    paddingHorizontal: 18,
+    marginTop: 50,
+    paddingBottom: 0,
+    },
+
   matShowcaseTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     marginBottom: 10,
   },
   matLargeIconFrame: {
@@ -195,13 +231,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  //3. 효능 박스
+matDescBackground: {
+    width: '103%',
+    alignSelf: 'center',
+    height: 65,
+    marginLeft: -5,
+    marginTop: -10,
+    marginBottom: 4,
+    paddingHorizontal:4,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
+
+matDescBackgroundImage: {
+  resizeMode: 'stretch',
+  borderRadius: 0,
+},
+
   matDescBox: {
-    backgroundColor: '#140D20',
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#34264E',
+    backgroundColor: 'transparent',
+    paddingLeft: '10%',
+    width: '106%',
+    height: 60,
+    justifyContent: 'center',
+    position: 'relative',
+
   },
+
   matDescLabel: {
     color: '#C5A059',
     fontSize: 11,
@@ -215,20 +272,21 @@ const styles = StyleSheet.create({
   },
 
   // 🗃️ 하단 4열 그리드
-  gridSectionHeading: {
-    color: '#E056FD',
-    fontSize: 13,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  matGridScroll: {
+ matGridScroll: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    paddingBottom: 24,
+    justifyContent: 'flex-start',
+    marginHorizontal: -4,        // 바깥 여백 보정
+    paddingBottom: 30,
+    paddingLeft: 10,
+  },
+  matCardSlotWrapper: {
+    width: '25%',                // 4열 완벽 균등 분할
+    padding: 3,    
   },
   matCardSlot: {
-    width: '22.8%',
+    width: '100%',
     aspectRatio: 0.82,
     backgroundColor: '#1C142A',
     borderRadius: 12,

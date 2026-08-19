@@ -1,3 +1,4 @@
+// app/(tabs)/_layout.tsx
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Image, StyleSheet } from 'react-native';
@@ -7,18 +8,27 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#FFD700',
-        tabBarInactiveTintColor: '#7A728E',
+        tabBarInactiveTintColor: '#8A7A9E',
         tabBarStyle: {
           backgroundColor: '#130E1F',
           borderTopWidth: 1.5,
           borderTopColor: '#34264E',
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: 72,
+          paddingBottom: 10,
+          paddingTop: 8,
+          maxWidth: 600,
+          width: '100%',
+          marginHorizontal: 'auto',
+          alignSelf: 'center',
+        },
+        tabBarLabelStyle: {
+          fontSize: 15,
+          fontWeight: 'bold',
         },
         headerShown: false,
       }}
     >
+      {/* 1. 재료 탭 (보라색 물약병) */}
       <Tabs.Screen
         name="materials"
         options={{
@@ -31,6 +41,8 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* 2. 홈 탭 (보라색 가마솥) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -43,6 +55,8 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* 3. 도감 탭 (황금 두루마리) */}
       <Tabs.Screen
         name="codex"
         options={{
@@ -55,18 +69,8 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="myroom"
-        options={{
-          title: '마이룸',
-          tabBarIcon: ({ focused }) => (
-            <Image
-              source={require('../../assets/images/tab_codex.png')}
-              style={[styles.tabIcon, !focused && styles.tabIconInactive]}
-            />
-          ),
-        }}
-      />
+
+      <Tabs.Screen name="myroom" options={{ href: null }} />
       <Tabs.Screen name="cauldron" options={{ href: null }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
@@ -74,6 +78,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabIcon: { width: 26, height: 26, resizeMode: 'contain' },
+  tabIcon: { width: 30, height: 30, resizeMode: 'contain' },
   tabIconInactive: { opacity: 0.4 },
 });

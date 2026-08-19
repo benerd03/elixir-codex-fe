@@ -1,5 +1,5 @@
 // app/(tabs)/codex.tsx
-import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import {
   View,
   Text,
@@ -189,15 +189,6 @@ export default function CodexScreen() {
                   )}
                 </View>
 
-                {/* 🏷️ 하단 카드명 */}
-                <View style={styles.slotNameBottomBar}>
-                  <Text
-                    style={[styles.gridPotionName, !item.isUnlocked && styles.gridLockedName]}
-                    numberOfLines={1}
-                  >
-                    {item.name}
-                  </Text>
-                </View>
               </TouchableOpacity>
             );
           })}
@@ -368,10 +359,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   gridPotionSlot: {
-    width: '22.8%',
-    aspectRatio: 0.82,
+    width: '31.5%',
+    aspectRatio: 0.6,
     backgroundColor: '#1C142A',
-    borderRadius: 12,
+    borderRadius:7,
     borderWidth: 1.2,
     borderColor: '#483566',
     paddingHorizontal: 4,
@@ -382,13 +373,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   gridPotionSlotSelected: {
-    borderColor: '#E056FD',
-    backgroundColor: '#341E4E',
+    borderColor: '#ab5734',
+    backgroundColor: '#c5c6e5',
   },
   gridPotionSlotLocked: {
-    backgroundColor: '#100C1A',
+    backgroundColor: '#0a080e',
     borderStyle: 'dashed',
-    borderColor: '#2E2242',
+    borderColor: '#752308',
     opacity: 0.75,
   },
 
@@ -397,16 +388,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 5,
     right: 5,
-    backgroundColor: 'rgba(14, 8, 24, 0.85)',
+    backgroundColor: 'rgba(56, 71, 134, 0.85)',
     paddingHorizontal: 5,
     paddingVertical: 1.5,
-    borderRadius: 5,
-    borderWidth: 0.8,
-    borderColor: '#483566',
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: 'transparent',
     zIndex: 5,
   },
   slotTopBadgeText: {
-    color: '#FFD700',
+    color: '#c5bd8e',
     fontSize: 9.5,
     fontWeight: 'bold',
   },
@@ -417,12 +408,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    marginTop: 6,
+    marginTop:0,
   },
   gridPotionThumb: {
-    width: '78%',
-    height: '78%',
-    borderRadius: 8,
+    width: '95%',
+    height: '98%',
+    borderRadius: 4,
   },
   lockIcon: {
     fontSize: 24,
@@ -437,7 +428,7 @@ const styles = StyleSheet.create({
   },
   gridPotionName: {
     color: '#FFFFFF',
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: 'bold',
     textAlign: 'center',
   },

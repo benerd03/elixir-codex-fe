@@ -61,9 +61,15 @@ export default function ElixirDetailModal({ visible, elixir, onClose }: Props) {
                   <Image source={elixir.imageSource} style={styles.largePotionImage} resizeMode="cover" />
                 </View>
 
+                {/* 카드 설명 (시너지) */}
+                <View style={styles.synergyCardBox}>
+                  <Text style={styles.synergyTitle}>설명</Text>
+                  <Text style={styles.synergyContent}>{elixir.brewingLore}</Text>
+                </View>
+
                 {/* 비약 스탯 */}
                 <View style={styles.cardStatsBox}>
-                  <Text style={styles.sectionHeaderLabel}>비약 스탯</Text>
+                  <Text style={styles.sectionHeaderLabel}>스탯</Text>
                   {Object.entries(elixir.stats).map(([statName, val]) => (
                     <View key={statName} style={styles.statGaugeRow}>
                       <Text style={styles.statGaugeLabel}>{statName}</Text>
@@ -75,17 +81,7 @@ export default function ElixirDetailModal({ visible, elixir, onClose }: Props) {
                   ))}
                 </View>
 
-                {/* 카드 설명 (시너지) */}
-                <View style={styles.synergyCardBox}>
-                  <Text style={styles.synergyTitle}>🏺 카드 설명</Text>
-                  <Text style={styles.synergyContent}>{elixir.brewingLore}</Text>
-                </View>
 
-                {/* 드래그 시 보이는 핵심 성분 & 재료 */}
-                <View style={styles.coreSectionBox}>
-                  <Text style={styles.sectionHeaderLabel}>핵심 성분</Text>
-                  <Text style={styles.coreIngredientsText}>{elixir.supplementSummary}</Text>
-                </View>
 
                 <View style={styles.materialsSectionBox}>
                   <Text style={styles.sectionHeaderLabel}>투입 재료</Text>
@@ -102,16 +98,13 @@ export default function ElixirDetailModal({ visible, elixir, onClose }: Props) {
                 showsVerticalScrollIndicator={false}
               >
                 <View style={styles.cardTopHeader}>
-                  <View style={styles.backBadgeTag}>
-                    <Text style={styles.backBadgeText}>CARD BACK</Text>
-                  </View>
-                  <Text style={styles.cardThemeText}>🔬 과학적 설명 (도감)</Text>
+                  <Text style={styles.cardThemeText}>과학적 설명</Text>
                 </View>
 
                 <Text style={styles.backCardTitle}>{elixir.name}의 성분 분석서</Text>
 
                 <View style={styles.backSectionHeader}>
-                  <Text style={styles.backSectionTitle}>🌿 투입 성분 1:1 상호작용</Text>
+                  <Text style={styles.backSectionTitle}>  핵심 성분</Text>
                 </View>
 
                 {/* 2단 분할 성분 카드 */}
@@ -140,7 +133,7 @@ export default function ElixirDetailModal({ visible, elixir, onClose }: Props) {
 
                 {/* 종합 생화학 메커니즘 */}
                 <View style={styles.overallScienceBox}>
-                  <Text style={styles.overallScienceTitle}>🧬 종합 생화학적 메커니즘</Text>
+                  <Text style={styles.overallScienceTitle}>시너지 분석</Text>
                   <Text style={styles.overallScienceBody}>{elixir.scienceDesc}</Text>
                 </View>
 
@@ -151,7 +144,7 @@ export default function ElixirDetailModal({ visible, elixir, onClose }: Props) {
             {/* 늘해랑 조언 툴팁 */}
             {showAdvisor && (
               <View style={styles.advisorFloatingTooltip}>
-                <Text style={styles.advisorSpeaker}>늘해랑의 조언</Text>
+                <Text style={styles.advisorSpeaker}>늘해랑</Text>
                 <Text style={styles.advisorSayText}>"{elixir.recipeHint || elixir.adviserComment}"</Text>
               </View>
             )}
@@ -188,7 +181,7 @@ export default function ElixirDetailModal({ visible, elixir, onClose }: Props) {
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.92)', justifyContent: 'center', alignItems: 'center' },
   fullscreenCardWrapper: { width: '92%', height: '90%', justifyContent: 'center', alignItems: 'center' },
-  hugeCardContainer: { width: '100%', height: '100%', backgroundColor: '#201C34', borderRadius: 22, borderWidth: 2.2, borderColor: '#F0932B', overflow: 'hidden', position: 'relative' },
+  hugeCardContainer: { maxWidth: 580, width: '100%', height: '100%', backgroundColor: '#201C34', borderRadius: 22, borderWidth: 2.2, borderColor: '#F0932B', overflow: 'hidden', position: 'relative' },
   modalCloseIcon: { position: 'absolute', top: 10, right: 12, zIndex: 30, padding: 6 },
   modalCloseText: { color: '#AAA', fontSize: 18, fontWeight: 'bold' },
   cardScrollView: { flex: 1 },
@@ -198,7 +191,7 @@ const styles = StyleSheet.create({
   cardGradeText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
   cardThemeText: { color: '#A29BFE', fontSize: 12, fontWeight: '700' },
   cardTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  largeArtFrame: { width: '100%', height: 440, borderRadius: 16, overflow: 'hidden', backgroundColor: '#141222', borderWidth: 1.5, borderColor: '#3E3960', marginBottom: 14 },
+  largeArtFrame: { maxHeight:'133%', width: '100%', height: '133%', borderRadius: 16, overflow: 'hidden', backgroundColor: '#141222', borderWidth: 1.5, borderColor: '#3E3960', marginBottom: 14 },
   largePotionImage: { width: '100%', height: '100%' },
   sectionHeaderLabel: { color: '#E056FD', fontSize: 11, fontWeight: 'bold', marginBottom: 6 },
   cardStatsBox: { backgroundColor: '#161326', borderRadius: 10, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: '#2F2B4A' },
