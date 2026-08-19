@@ -1,35 +1,79 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Tabs } from 'expo-router';
+import { Image, StyleSheet } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#FFD700',
+        tabBarInactiveTintColor: '#7A728E',
+        tabBarStyle: {
+          backgroundColor: '#130E1F',
+          borderTopWidth: 1.5,
+          borderTopColor: '#34264E',
+          height: 64,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+      }}
+    >
+      <Tabs.Screen
+        name="materials"
+        options={{
+          title: '재료',
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={require('../../assets/images/tab_materials.png')}
+              style={[styles.tabIcon, !focused && styles.tabIconInactive]}
+            />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: '홈',
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={require('../../assets/images/tab_home.png')}
+              style={[styles.tabIcon, !focused && styles.tabIconInactive]}
+            />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="codex"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: '도감',
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={require('../../assets/images/tab_codex.png')}
+              style={[styles.tabIcon, !focused && styles.tabIconInactive]}
+            />
+          ),
         }}
       />
+      <Tabs.Screen
+        name="myroom"
+        options={{
+          title: '마이룸',
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={require('../../assets/images/tab_codex.png')}
+              style={[styles.tabIcon, !focused && styles.tabIconInactive]}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen name="cauldron" options={{ href: null }} />
+      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIcon: { width: 26, height: 26, resizeMode: 'contain' },
+  tabIconInactive: { opacity: 0.4 },
+});
