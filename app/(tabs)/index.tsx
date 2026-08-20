@@ -21,6 +21,7 @@ import { getMaterialImage } from '../../constants/materialImages';
 import { getElixirImage } from '../../constants/elixirImages';
 import ElixirDetailModal from '../../src/components/ElixirDetailModal';
 import QuestModal from '../../src/components/QuestModal';
+import AttendanceModal from '@/src/components/AttendanceModal';
 
 // 🧪 [백엔드 연동 & 테마/등급 변환 내장 로직]
 const BACKEND_BASE_URL = 'http://localhost:8080'; // 💡 백엔드 공인 IP 또는 localhost
@@ -601,38 +602,11 @@ const [brewModalOpen, setBrewModalOpen] = useState(false);
   onClose={() => setQuestOpen(false)}
 />
 
-      {/* 출석체크 모달 */}
-      <Modal visible={attendanceOpen} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.popupModalCard}>
-            <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>📅 7일 출석체크</Text>
-              <TouchableOpacity onPress={() => setAttendanceOpen(false)}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.attendanceSub}>매일 출석하고 7일차에 전설 보상 상자를 받으세요!</Text>
-            <View style={styles.attendanceDaysRow}>
-              {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                <View key={d} style={[styles.dayCircle, (d <= 3 || attendanceChecked) && styles.dayCircleActive]}>
-                  <Text style={styles.dayText}>{d}일</Text>
-                  <Text style={styles.dayIcon}>{d <= 3 || (d === 4 && attendanceChecked) ? '✓' : '🎁'}</Text>
-                </View>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={[styles.checkInActionBtn, attendanceChecked && styles.checkInActionBtnDone]}
-              disabled={attendanceChecked}
-              onPress={() => {
-                setAttendanceChecked(true);
-                Alert.alert('출석 완료', '오늘의 출석체크가 완료되었습니다!');
-              }}
-            >
-              <Text style={styles.checkInActionText}>{attendanceChecked ? '오늘 출석 완료' : '오늘 출석체크 하기'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+{/* 📅 7일 출석체크 모달 */}
+<AttendanceModal 
+  visible={attendanceOpen} 
+  onClose={() => setAttendanceOpen(false)} 
+/>
 
       {/* 📸 OCR 다중 영양제 촬영 모달 */}
       <Modal visible={ocrOpen} transparent animationType="fade">

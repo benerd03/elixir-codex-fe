@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { FullWindowOverlay } from 'react-native-screens';
 
 interface Props {
   visible: boolean;
@@ -134,7 +135,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalBox: {
-    width: '90%',
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: 560,
+    alignSelf: 'center',
     backgroundColor: '#242038',
     borderRadius: 24,
     paddingHorizontal: 18,
@@ -143,6 +147,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#6C5CE7',
   },
+
   closeIconButton: {
     position: 'absolute',
     top: 16,

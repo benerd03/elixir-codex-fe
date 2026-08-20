@@ -26,20 +26,22 @@ interface Props {
   onClaimReward?: (matId: string, matName: string) => void;
 }
 
-// 📜 일일 퀘스트 Mock 데이터
+// 📜 일일 퀘스트 Mock 데이터 (수정본)
 const DAILY_QUESTS: QuestItem[] = [
   { id: 'd1', title: '아침 미온수 1잔 마시기', rewardText: '이슬 한 방울 x1', rewardMatId: 'm1', rewardMatName: '이슬 한 방울', grade: 'Common' },
   { id: 'd2', title: '오늘의 영양제 섭취 인증', rewardText: '황금 레몬 x1', rewardMatId: 'm3', rewardMatName: '황금 레몬', grade: 'Rare' },
   { id: 'd3', title: '가벼운 스트레칭 5분', rewardText: '활력초 x1', rewardMatId: 'm5', rewardMatName: '활력초', grade: 'Common' },
   { id: 'd4', title: '햇볕 쬐며 산책 10분', rewardText: '탱탱 젤리 x1', rewardMatId: 'm2', rewardMatName: '탱탱 젤리', grade: 'Common' },
-  { id: 'd5', title: '밤 12시 이전 취침 준비', rewardText: '평온초 x1', rewardMatId: 'm11', rewardMatName: '평온초', grade: 'Rare' },
+  // 💡 평온초 ID는 m11이 아니라 m13입니다 (m11은 포만 이끼).
+  { id: 'd5', title: '밤 12시 이전 취침 준비', rewardText: '평온초 x1', rewardMatId: 'm13', rewardMatName: '평온초', grade: 'Rare' },
 ];
 
-// 📜 주간 퀘스트 Mock 데이터
+// 📜 주간 퀘스트 Mock 데이터 (수정본)
 const WEEKLY_QUESTS: QuestItem[] = [
   { id: 'w1', title: '[운동] 주 3회 30분 유산소 운동', rewardText: '백옥 진주 x1', rewardMatId: 'm4', rewardMatName: '백옥 진주', grade: 'Epic' },
   { id: 'w2', title: '[루틴] 5일 연속 영양제 인증 완료', rewardText: '천년 뿌리 x1', rewardMatId: 'm8', rewardMatName: '천년 뿌리', grade: 'Epic' },
-  { id: 'w3', title: '[휴식] 주간 평균 7시간 수면 달성', rewardText: '안정석 x1', rewardMatId: 'm12', rewardMatName: '안정석', grade: 'Rare' },
+  // 💡 안정석 ID는 m12가 아니라 m14입니다 (m12는 바나바잎).
+  { id: 'w3', title: '[휴식] 주간 평균 7시간 수면 달성', rewardText: '안정석 x1', rewardMatId: 'm14', rewardMatName: '안정석', grade: 'Rare' },
   { id: 'w4', title: '[식습관] 야식 먹지 않기 4회 달성', rewardText: '마룡 뿔 x1', rewardMatId: 'm7', rewardMatName: '마룡 뿔', grade: 'Epic' },
 ];
 
