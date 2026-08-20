@@ -21,7 +21,6 @@ const CATEGORIES = [
   { id: '피로/에너지', name: '피로 / 에너지', icon: '⚡' },
   { id: '혈당/다이어트', name: '혈당 / 다이어트', icon: '🩸' },
   { id: '수면/휴식', name: '수면 / 휴식', icon: '🌙' },
-  { id: '월식의 변이종', name: '월식의 변이종', icon: '🔮' },
 ];
 
 const GRADES = ['All', 'Common', 'Rare', 'Epic', 'Prismatic'];
@@ -36,9 +35,7 @@ export default function CodexScreen() {
   // 카테고리 + 등급 복합 필터링
   const filteredList = MOCK_ELIXIRS.filter((item) => {
     let matchCategory = true;
-    if (selectedCategory === '월식의 변이종') {
-      matchCategory = item.themeCategory === '월식의 변이종' || item.grade === 'Prismatic';
-    } else if (selectedCategory !== 'ALL') {
+    if (selectedCategory !== 'ALL') {
       matchCategory = item.themeCategory === selectedCategory;
     }
 
@@ -108,7 +105,7 @@ export default function CodexScreen() {
                 <Text style={styles.gradeBadgeText}>🟣 {selectedElixir.grade}</Text>
               </View>
               <Text style={styles.showcaseTitle}>{selectedElixir.name}</Text>
-              <Text style={styles.tapToDetailHint}>👆 탭하여 과학적 상세 메커니즘 보기</Text>
+              <Text style={styles.tapToDetailHint}>👆 탭하여 자세히 보기</Text>
             </View>
           </View>
 
@@ -184,8 +181,12 @@ export default function CodexScreen() {
                 <View style={styles.slotCenterArea}>
                   {item.isUnlocked ? (
                     <Image source={item.imageSource} style={styles.gridPotionThumb} resizeMode="cover" />
-                  ) : (
-                    <Text style={styles.lockIcon}>🔒</Text>
+                  ) : ( 
+                    <Image
+                      source={require('../../assets/images/img_locked_large.png')}
+                      style={styles.slotLockedThumbImg}
+                      resizeMode="contain"
+                    />
                   )}
                 </View>
 
@@ -379,7 +380,12 @@ const styles = StyleSheet.create({
   gridPotionSlotLocked: {
     backgroundColor: '#0a080e',
     borderStyle: 'dashed',
-    borderColor: '#752308',
+    borderColor: '#2E2242',
+    opacity: 0.75,
+  },
+  slotLockedThumbImg: {
+    width: '75%',
+    height: '75%',
     opacity: 0.75,
   },
 
