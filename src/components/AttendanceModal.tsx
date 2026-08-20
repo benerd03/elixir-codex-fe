@@ -13,6 +13,7 @@ interface Props {
   onClose: () => void;
 }
 
+
 // 7일 출석 보상 데이터
 const ATTENDANCE_REWARDS = [
   { day: 1, reward: '비타민C x1', icon: '💊' },
@@ -52,9 +53,7 @@ export default function AttendanceModal({ visible, onClose }: Props) {
     // 출석 완료 처리
     const nextDay = attendedDays + 1;
     setAttendedDays(nextDay);
-    setCheckedToday(true);
-
-    if (nextDay === 7) {
+    setCheckedToday(true);    if (nextDay === 7) {
       Alert.alert('🎉 7일 연속 출석 달성!', '마이룸 전용 가구 보상을 획득했습니다!\n마이룸 탭에서 확인해 보세요.');
     } else {
       Alert.alert('✨ 출석 완료!', `${nextDay}일차 보상 [${ATTENDANCE_REWARDS[nextDay - 1].reward}]이 지급되었습니다.`);
