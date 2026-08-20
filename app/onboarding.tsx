@@ -19,6 +19,14 @@ import { NPC_IMAGES, NpcEmotion } from '../constants/npcImages';
 import { getElixirImage } from '../constants/elixirImages';
 import { Platform } from 'react-native'; // 👈 Platform이 임포트되어 있는지 확인!
 
+const router = useRouter();
+
+const handleFinishOnboarding = () => {
+  // ❌ window.location.href = '/(tabs)' 또는 '/'; (웹 서버 설정에 따라 404 유발)
+  // ⭕ Expo Router 내부 이동 사용
+  router.replace('/(tabs)');
+};
+
 const { width } = Dimensions.get('window');
 
 // 등록된 영양제 사진 객체 규격

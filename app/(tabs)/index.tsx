@@ -25,6 +25,71 @@ import ElixirDetailModal from '../../src/components/ElixirDetailModal';
 import QuestModal from '../../src/components/QuestModal';
 import AttendanceModal from '@/src/components/AttendanceModal';
 
+// 🎬 [해커톤 시연용 더미 엘릭서: 온전한 조화 엘릭서] (추후삭제!!!)
+const DEMO_HARMONY_ELIXIR: ElixirCardData = {
+  id: 'harmony_demo_01',
+  name: '온전한 조화 엘릭서',
+  grade: 'Epic',
+  themeCategory: '피로/에너지',
+  // 첨부하신 이미지 에셋 경로 또는 고화질 마법 비약 Fallback
+  imageSource: require('../../assets/images/elixirs/fatigue_01.png'), // 또는 { uri: 'https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=600' }
+  imageUrl: 'https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=600',
+  isUnlocked: true,
+  serialNumber: '#EPIC_7749',
+  
+  // 1. 섭취한 영양제 및 투입된 마법재료
+  supplementSummary: '비타민 C + 오메가3 + 마그네슘 + 유산균',
+  ingredientSummary: '황금 레몬, 심해 오일, 안정석, 황금 포자',
+  
+  // 2. 연금술 발현 기록 (카드 설명)
+  brewingLore: '황금 레몬의 상큼한 빛과 심해 오일의 푸른 윤슬이 가마솥 안에서 소용돌이칩니다. 안정석의 차분한 기운과 황금 포자의 생명력이 융합되자, 은은한 에메랄드빛 광채와 함께 온몸의 긴장을 녹이는 맑고 깊은 향기가 피어오릅니다.',
+  
+  // 3. 늘해랑 조언 (... 버튼 툴팁)
+  adviserComment: '체내 장벽부터 세포 끝까지 빈틈없이 채워주는 완벽한 올인원 배합이야! 잔병치레나 지친 피로 따윈 얼씬도 못 하겠는걸? 이 루틴 그대로 매일 유지해봐!',
+  
+  // 4. 스탯 효과
+  recipeHint: '활력 마나량, 항산화 방어, 스트레스 차단 기본 수치 +25% 복합 보정',
+  stats: {
+    '활력 마나량': 88,
+    '항산화 방어': 92,
+    '스트레스 차단': 85,
+  },
+
+  // 5. 도감 뒷면: 투입 성분 1:1 상호작용 과학적 설명
+  ingredientScienceList: [
+    {
+      name: '황금 레몬',
+      original: '비타민 C',
+      icon: '🍋',
+      effect: '수용성 항산화 조효소로 작용해 체내 유해 활성산소를 제거하고 면역 세포 활성을 지원합니다.',
+    },
+    {
+      name: '심해 오일',
+      original: '오메가3 / EPA·DHA',
+      icon: '🌊',
+      effect: '세포막 인지질 구조의 유동성을 높이고 염증성 사이토카인 생성을 억제해 전신 미세 염증을 완화합니다.',
+    },
+    {
+      name: '안정석',
+      original: '마그네슘',
+      icon: '🪨',
+      effect: '300종 이상의 생체 효소 반응을 보조하며 신경 흥분과 근육 경직을 풀어 심신을 안정화합니다.',
+    },
+    {
+      name: '황금 포자',
+      original: '유산균 / 프로바이오틱스',
+      icon: '🍄',
+      effect: '장내 유익균 총을 형성하여 체내 면역세포의 70%를 담당하는 장벽을 강화하고 영양소 흡수율을 극대화합니다.',
+    },
+  ],
+
+  // 6. 종합 생화학적 메커니즘 (3줄 요약)
+  scienceDesc: '유산균이 장벽을 튼튼히 다져 영양 흡수율을 높이면, 오메가3가 세포막 유동성을 개선해 비타민 C와 마그네슘의 세포 내 흡수를 가속합니다. 비타민 C의 수용성 항산화와 오메가3의 지용성 항염 작용이 결합하고, 마그네슘이 신경·근육 긴장을 완화해 장-뇌 축(Gut-Brain Axis)과 전신 면역 방어선을 동시에 완성합니다.',
+};
+
+
+
+
 // 🧪 [백엔드 연동 & 테마/등급 변환 내장 로직]
 const BACKEND_BASE_URL = 'http://localhost:8080'; // 💡 백엔드 공인 IP 또는 localhost
 
@@ -140,7 +205,40 @@ const [brewModalOpen, setBrewModalOpen] = useState(false);
     }
   };
 
-// 🧪 가마솥 연성 확정 핸들러
+
+
+
+
+// 🧪 [시연 영상용] 가마솥 연성 확정 핸들러 (추후삭제!!!)
+
+  const handleConfirmBrew = () => {
+
+    setBrewModalOpen(false); // 재료 모달 닫기
+
+    setIsBrewing(true);      // 가마솥 끓는 애니메이션 시작
+
+
+
+    // 1.5초 딜레이 후 결과 모달 오픈
+
+    setTimeout(() => {
+
+      setIsBrewing(false);
+
+      
+
+      // ✅ 시연용 더미 엘릭서 데이터를 결과 모달에 세팅
+
+      setResultElixir(DEMO_HARMONY_ELIXIR);
+
+    }, 1500);
+
+  };
+
+
+
+  
+/*//🧪 가마솥 연성 확정 핸들러
   const handleConfirmBrew = async () => {
     setBrewModalOpen(false);
     setIsBrewing(true);
@@ -270,6 +368,8 @@ const [brewModalOpen, setBrewModalOpen] = useState(false);
       Alert.alert('연성 실패', error.message || '엘릭서 연성 중 오류가 발생했습니다.');
     }
   };
+
+*/
 
   const handleSaveToCodex = () => {
     Alert.alert('📖 도감 등록', `'${resultElixir?.name}'이(가) 비약 도감에 보관되었습니다!`);
