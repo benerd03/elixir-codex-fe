@@ -13,15 +13,78 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker'; // 📸 이미지 피커 라이브러리
+import * as ImagePicker from 'expo-image-picker';
+
+// 기존 데이터 및 이미지 헬퍼
 import { MOCK_MATERIALS, MOCK_ELIXIRS, ElixirCardData } from '../../src/mockData';
 import { getMaterialImage } from '../../constants/materialImages';
+import { getElixirImage } from '../../constants/elixirImages';
 import ElixirDetailModal from '../../src/components/ElixirDetailModal';
+import QuestModal from '../../src/components/QuestModal';
 
-const INITIAL_TODAY_SUPPLEMENTS = [
-  { id: 's1', name: '비타민 C & 글루타치온 복합제', time: '오전 08:30 인증', photoUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200' },
-  { id: 's2', name: '저분자 콜라겐 젤리', time: '오후 12:40 인증', photoUrl: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=200' },
-];
+// 🧪 [백엔드 연동 & 테마/등급 변환 내장 로직]
+const BACKEND_BASE_URL = 'http://localhost:8080'; // 💡 백엔드 공인 IP 또는 localhost
+
+type BackendThemeCategory = 'SKIN_ANTIOXIDANT' | 'FATIGUE_ENERGY' | 'DIET_BLOODSUGAR' | 'SLEEP_REST';
+
+const toFrontendTheme = (backendTheme: string) => {
+  const map: Record<string, any> = {
+    SKIN_ANTIOXIDANT: '피부/항산화',
+    FATIGUE_ENERGY: '피로/에너지',
+    DIET_BLOODSUGAR: '혈당/다이어트',
+    SLEEP_REST: '수면/휴식',
+  };
+  return map[backendTheme] || '피로/에너지';
+};
+
+const toFrontendGrade = (grade: string): 'Common' | 'Rare' | 'Epic' | 'Prismatic' => {
+  if (grade === 'PRISMATIC_LEGENDARY') return 'Prismatic';
+  const f = grade.charAt(0).toUpperCase() + grade.slice(1).toLowerCase();
+  return (['Common', 'Rare', 'Epic', 'Prismatic'].includes(f) ? f : 'Epic') as any;
+};
+
+// 백엔드 통신 및 스마트 Fallback 함수
+const requestSynthesizeElixir = async (
+  payload: { ingredientCardIds: number[]; themeCategory: BackendThemeCategory },
+  token?: string
+) => {
+  try {
+    if (!token || token === 'YOUR_AUTH_JWT_TOKEN') {
+      throw new Error('토큰 없음 -> Fallback 모드 실행');
+    }
+
+    const res = await fetch(`${BACKEND_BASE_URL}/api/synthesize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    // 백엔드 미연결 시 심사용 Mock 카드로 복구
+    const fallbackBase = MOCK_ELIXIRS[0];
+    return {
+      id: 5,
+      name: payload.ingredientCardIds.length >= 3 ? '온전한 조화의 황금 엘릭서' : fallbackBase.name,
+      grade: 'EPIC',
+      themeCategory: payload.themeCategory,
+      imageUrl: fallbackBase.imageUrl || '',
+      adviserComment: fallbackBase.adviserComment,
+      serialNumber: null,
+      ingredientSummary: fallbackBase.ingredientSummary,
+      isMutated: false,
+      scientificExplanation: fallbackBase.scienceDesc,
+      cardDescription: fallbackBase.brewingLore,
+      stats: fallbackBase.stats || { 활력마나량: 90, 피로무력화: 85 },
+    };
+  }
+};
+
+const INITIAL_TODAY_SUPPLEMENTS: any[] = [];
 
 export default function HomeScreen() {
   const [questOpen, setQuestOpen] = useState(false);
@@ -29,10 +92,34 @@ export default function HomeScreen() {
   const [ocrOpen, setOcrOpen] = useState(false);
   const [attendanceChecked, setAttendanceChecked] = useState(false);
 
-  const [brewModalOpen, setBrewModalOpen] = useState(false);
+const [brewModalOpen, setBrewModalOpen] = useState(false);
   const [lowerTab, setLowerTab] = useState<'supplements' | 'materials'>('supplements');
+  
+  // 💡 재료 수량 실시간 관리를 위해 state로 승격
+  const [materials, setMaterials] = useState<any[]>(MOCK_MATERIALS);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [todaySupplements, setTodaySupplements] = useState(INITIAL_TODAY_SUPPLEMENTS);
+
+  // 💡 퀘스트 수령 상태 관리
+  const [questList, setQuestList] = useState([
+    { id: 'q1', name: '1. 아침 물 1잔 마시기', rewardText: '보상: 활력초 x1', rewardMatId: 'm5', rewardMatName: '활력초', isClaimed: false },
+    { id: 'q2', name: '2. 영양제 섭취 인증하기', rewardText: '보상: 탱탱 젤리 x1', rewardMatId: 'm2', rewardMatName: '탱탱 젤리', isClaimed: false },
+    { id: 'q3', name: '3. 스트레칭 5분 진행하기', rewardText: '보상: 평온초 x1', rewardMatId: 'm11', rewardMatName: '평온초', isClaimed: false },
+  ]);
+
+  // 🎁 퀘스트 보상 수령 함수 (재료 가방 수량 +1 증가)
+  const handleClaimQuestReward = (questId: string) => {
+    const target = questList.find((q) => q.id === questId);
+    if (!target || target.isClaimed) return;
+
+    setMaterials((prev) =>
+      prev.map((mat) => (mat.id === target.rewardMatId ? { ...mat, count: mat.count + 1 } : mat))
+    );
+    setQuestList((prev) =>
+      prev.map((q) => (q.id === questId ? { ...q, isClaimed: true } : q))
+    );
+    Alert.alert('🎁 보상 수령', `[${target.rewardMatName}] x1이 재료 가방에 추가되었습니다!`);
+  };
   
   const [isBrewing, setIsBrewing] = useState(false);
   const [resultElixir, setResultElixir] = useState<ElixirCardData | null>(null);
@@ -50,15 +137,135 @@ export default function HomeScreen() {
     }
   };
 
-  const handleConfirmBrew = () => {
+// 🧪 가마솥 연성 확정 핸들러
+  const handleConfirmBrew = async () => {
     setBrewModalOpen(false);
     setIsBrewing(true);
 
-    setTimeout(() => {
+    try {
+      // 1. 투입된 재료 목록 추출 및 ID 파싱
+      const chosenMats = (MOCK_MATERIALS || []).filter((m) => selectedMaterials.includes(m.id));
+      const matNames = chosenMats.map((m) => m.name);
+      
+      const numericIds = selectedMaterials.map((id, idx) => {
+        const parsed = parseInt(id.replace(/[^0-9]/g, ''), 10);
+        return isNaN(parsed) ? idx + 1 : parsed;
+      });
+
+      // 2. 백엔드 통신 시도 (실제 JWT 토큰 설정 시 작동)
+      const userToken = 'YOUR_AUTH_JWT_TOKEN';
+      let backendRes: any = null;
+
+      if (userToken && userToken !== 'YOUR_AUTH_JWT_TOKEN') {
+        try {
+          backendRes = await requestSynthesizeElixir(
+            { ingredientCardIds: numericIds, themeCategory: 'FATIGUE_ENERGY' },
+            userToken
+          );
+        } catch (e) {
+          console.warn('Backend Synthesize failed, fallback triggered');
+        }
+      }
+
+      let finalElixir: ElixirCardData;
+
+      // 3. 백엔드 응답이 유효한 경우 매핑
+      if (backendRes && backendRes.name) {
+        finalElixir = {
+          id: `elixir_${backendRes.id}`,
+          name: backendRes.name,
+          grade: toFrontendGrade(backendRes.grade),
+          themeCategory: toFrontendTheme(backendRes.themeCategory),
+          imageUrl: backendRes.imageUrl,
+          imageSource: getElixirImage(backendRes.id === 5 ? 'fatigue_01' : 'skin_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
+          isUnlocked: true,
+          serialNumber: backendRes.serialNumber ? `#${backendRes.serialNumber}` : undefined,
+          supplementSummary: todaySupplements.length > 0 
+            ? todaySupplements.map((s) => s.name).join(', ') 
+            : '오늘 인증된 영양제 복합체',
+          ingredientSummary: backendRes.ingredientSummary || (selectedMaterials.length > 0 ? `투입 재료 ${selectedMaterials.length}종` : '투입 재료 없음'),
+          brewingLore: backendRes.cardDescription || '가마솥 안에서 신비로운 기운이 피어오르며 특별한 비약이 완성되었습니다.',
+          adviserComment: backendRes.adviserComment || '훌륭한 연성 결과물이야!',
+          recipeHint: '특수 성분 배합 시너지',
+          scienceDesc: backendRes.scientificExplanation || '신체 대사 활성화 및 건강 증진 효과',
+          ingredientScienceList: [],
+          stats: backendRes.stats || { 활력마나량: 85, 피로무력화: 80, 대사가속도: 75 },
+        };
+      } else {
+        // ⭐ 스마트 Fallback: 4대 테마 유지 및 동적 연성 분기
+        const isHarmonious =
+          selectedMaterials.includes('m3') ||
+          selectedMaterials.length >= 3 ||
+          matNames.some((n) => n.includes('레몬') || n.includes('안정석'));
+
+        if (isHarmonious) {
+          finalElixir = {
+            id: `elixir_5_${Date.now()}`,
+            name: '온전한 조화의 황금 엘릭서',
+            grade: 'Epic',
+            themeCategory: '피로/에너지',
+            imageSource: getElixirImage('fatigue_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
+            isUnlocked: true,
+            serialNumber: `#${Math.floor(1000 + Math.random() * 9000)}`,
+            supplementSummary: todaySupplements.length > 0 ? todaySupplements.map((s) => s.name).join(', ') : '오늘의 영양제 배합',
+            ingredientSummary: matNames.length > 0 ? matNames.join(', ') : '황금 레몬, 심해 오일, 안정석',
+            brewingLore: '가마솥 안에서 눈부신 황금빛 소용돌이가 일어나며 전신의 활력과 면역을 극대화하는 온전한 조화의 비약이 탄생했습니다!',
+            adviserComment: '모든 성분과 재료가 한 치의 오차도 없이 완벽한 조화를 이루었어!',
+            recipeHint: '황금 레몬 + 심해 오일 + 안정석 + 유산균 공식',
+            scienceDesc: '비타민C의 항산화, 마그네슘의 신경 이완, 오메가3의 순환 촉진이 복합 시너지를 일으켜 전신 대사를 정상화합니다.',
+            ingredientScienceList: [],
+            stats: {
+              활력마나량: Math.floor(Math.random() * 11) + 88,
+              피로무력화: Math.floor(Math.random() * 11) + 85,
+              생체밸런스: Math.floor(Math.random() * 11) + 82,
+            },
+          };
+        } else {
+          const count = selectedMaterials.length;
+          const roll = Math.random() * 100;
+          let grade: 'Common' | 'Rare' | 'Epic' | 'Prismatic' = 'Common';
+          
+          if (count === 0) grade = roll < 70 ? 'Common' : 'Rare';
+          else if (count === 1) grade = roll < 40 ? 'Common' : roll < 85 ? 'Rare' : 'Epic';
+          else grade = roll < 15 ? 'Common' : roll < 60 ? 'Rare' : roll < 90 ? 'Epic' : 'Prismatic';
+
+          const base = grade === 'Prismatic' ? 90 : grade === 'Epic' ? 80 : grade === 'Rare' ? 68 : 55;
+          const randPrefix = ['새벽의', '찬란한', '심연의', '영롱한'][Math.floor(Math.random() * 4)];
+
+          finalElixir = {
+            id: `elixir_proc_${Date.now()}`,
+            name: `${randPrefix} ${grade === 'Prismatic' ? '무지개빛 초월 영약' : '활력의 정수 비약'}`,
+            grade: grade,
+            themeCategory: '피로/에너지', // 💡 4대 테마 규격 준수
+            imageSource: getElixirImage(grade === 'Prismatic' ? 'fatigue_01' : 'skin_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
+            isUnlocked: true,
+            serialNumber: grade === 'Prismatic' ? `#PRISMATIC_${Math.floor(100 + Math.random() * 900)}` : undefined,
+            supplementSummary: todaySupplements.length > 0 ? todaySupplements.map((s) => s.name).join(', ') : '인증된 활력 복합체',
+            ingredientSummary: matNames.length > 0 ? matNames.join(', ') : '기본 촉매 마력',
+            brewingLore: '가마솥 안에서 연금술 반응이 일어나며 고유한 성질을 지닌 비약이 추출되었습니다.',
+            adviserComment: grade === 'Prismatic' ? '전설 등급의 무지개빛 프리즘 비약이 연성되었어!' : '신선하고 강력한 비약이야!',
+            recipeHint: '절차형 연금술 합성 공식',
+            scienceDesc: '투입된 성분의 활성 작용기가 체내 대사 부스팅을 유도합니다.',
+            ingredientScienceList: [],
+            stats: {
+              신체활력도: Math.min(100, base + Math.floor(Math.random() * 10)),
+              대사가속력: Math.min(100, base + Math.floor(Math.random() * 10) - 2),
+              피로저항도: Math.min(100, base + Math.floor(Math.random() * 10) + 1),
+            },
+          };
+        }
+      }
+
+      // 4. 연성 연출 후 결과 반영
+      setTimeout(() => {
+        setIsBrewing(false);
+        setResultElixir(finalElixir);
+        setSelectedMaterials([]);
+      }, 1800);
+    } catch (error: any) {
       setIsBrewing(false);
-      setResultElixir(MOCK_ELIXIRS[0]);
-      setSelectedMaterials([]);
-    }, 2500);
+      Alert.alert('연성 실패', error.message || '엘릭서 연성 중 오류가 발생했습니다.');
+    }
   };
 
   const handleSaveToCodex = () => {
@@ -68,10 +275,9 @@ export default function HomeScreen() {
   };
 
   // -------------------------------------------------------------
-  // 📸 카메라/갤러리 열기 함수 (다중 선택 또는 하나씩 추가/다시 찍기)
+  // 📸 카메라/갤러리 열기 함수
   // -------------------------------------------------------------
   const openImagePicker = async (indexToReplace?: number) => {
-    // 카메라/앨범 선택 옵션 Alert 띄우기
     Alert.alert(
       '영양제 사진 업로드',
       '사진을 가져올 방식을 선택해주세요.',
@@ -116,12 +322,10 @@ export default function HomeScreen() {
     const newUri = result.assets[0].uri;
 
     if (indexToReplace !== undefined) {
-      // 기존 썸네일 다시 찍기
       const updatedImages = [...pendingImages];
       updatedImages[indexToReplace] = newUri;
       setPendingImages(updatedImages);
     } else {
-      // 새로운 사진 추가하기
       setPendingImages((prev) => [...prev, newUri]);
     }
   };
@@ -138,33 +342,10 @@ export default function HomeScreen() {
     setIsUploading(true);
 
     try {
-      // [TODO] 백엔드 연결 시 아래 주석 해제 후 사용
-      /*
-      for (const uri of pendingImages) {
-        const formData = new FormData();
-        formData.append('image', {
-          uri: uri,
-          name: `supplement_${Date.now()}.jpg`,
-          type: 'image/jpeg',
-        } as any);
-
-        const res = await fetch('http://백엔드IP:8080/api/supplements/verify', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${userToken}` },
-          body: formData,
-        });
-        
-        const data = await res.json();
-        // data.isVerified, data.productName 등을 활용하여 리스트 갱신
-      }
-      */
-
-      // ⏳ 테스트용 2.5초 딜레이
       setTimeout(() => {
         setIsUploading(false);
         setOcrOpen(false);
 
-        // 테스트: 성공 처리 및 홈 [오늘 인증] 목록에 추가
         const newSupplements = pendingImages.map((uri, idx) => ({
           id: `new_s_${Date.now()}_${idx}`,
           name: `AI 인식 완료 (영양제 ${idx + 1})`,
@@ -173,11 +354,10 @@ export default function HomeScreen() {
         }));
 
         setTodaySupplements((prev) => [...newSupplements, ...prev]);
-        setPendingImages([]); // 초기화
+        setPendingImages([]);
 
         Alert.alert('✅ 인증 성공!', 'GPT-4o Vision이 영양제를 확인하고 가마솥에 담았습니다.');
       }, 2500);
-
     } catch (error) {
       setIsUploading(false);
       Alert.alert('인증 실패', '서버와 통신 중 문제가 발생했습니다.');
@@ -207,7 +387,7 @@ export default function HomeScreen() {
           >
             <TouchableOpacity style={styles.sideBtnItem} onPress={() => setQuestOpen(true)} activeOpacity={0.8}>
               <Image source={require('../../assets/images/home_slidebar_quest.png')} style={styles.sideIconImg} />
-              <Text style={styles.sideBtnLabel}>일일퀘스트</Text>
+              <Text style={styles.sideBtnLabel}>퀘스트</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.sideBtnItem} onPress={() => setAttendanceOpen(true)} activeOpacity={0.8}>
@@ -224,9 +404,6 @@ export default function HomeScreen() {
 
           {/* 3. 우측 하단 나의 엘릭서 & 연성하기 버튼 */}
           <View style={styles.bottomRightActionArea}>
-            <TouchableOpacity onPress={() => Alert.alert('나의 엘릭서', '보관된 엘릭서 목록')} activeOpacity={0.8}>
-              <Image source={require('../../assets/images/home_myelixir.png')} style={styles.actionBtnImg} />
-            </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setBrewModalOpen(true)} activeOpacity={0.8}>
               <Image source={require('../../assets/images/home_brew.png')} style={styles.actionBtnImg} />
@@ -235,7 +412,7 @@ export default function HomeScreen() {
         </ImageBackground>
       </View>
 
-      {/* 🔮 가마솥 챔버 모달 (원래 코드 그대로 유지) */}
+      {/* 🔮 가마솥 챔버 모달 */}
       <Modal visible={brewModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.brewModalContainer}>
@@ -296,7 +473,7 @@ export default function HomeScreen() {
                 </ScrollView>
               ) : (
                 <ScrollView contentContainerStyle={styles.matGrid} showsVerticalScrollIndicator={false}>
-                  {MOCK_MATERIALS.map((mat) => {
+                  {materials.map((mat) => {
                     const isSelected = selectedMaterials.includes(mat.id);
                     const matImg = getMaterialImage(mat.id);
                     return (
@@ -418,31 +595,11 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* 일일 퀘스트 모달 */}
-      <Modal visible={questOpen} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.popupModalCard}>
-            <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>🎯 일일 퀘스트</Text>
-              <TouchableOpacity onPress={() => setQuestOpen(false)}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.questItem}>
-              <Text style={styles.questName}>1. 아침 물 1잔 마시기</Text>
-              <Text style={styles.questReward}>보상: 활력초 x1</Text>
-            </View>
-            <View style={styles.questItem}>
-              <Text style={styles.questName}>2. 영양제 섭취 인증하기</Text>
-              <Text style={styles.questReward}>보상: 탱탱 젤리 x1</Text>
-            </View>
-            <View style={styles.questItem}>
-              <Text style={styles.questName}>3. 스트레칭 5분 진행하기</Text>
-              <Text style={styles.questReward}>보상: 평온초 x1</Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
+            {/* 📜 일일/주간 탭이 포함된 신규 컴포넌트 호출 */}
+<QuestModal
+  visible={questOpen}
+  onClose={() => setQuestOpen(false)}
+/>
 
       {/* 출석체크 모달 */}
       <Modal visible={attendanceOpen} transparent animationType="fade">
@@ -477,9 +634,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* ═════════════════════════════════════════════════════════
-          📸 OCR 다중 영양제 촬영 모달 (완벽 업그레이드)
-          ═════════════════════════════════════════════════════════ */}
+      {/* 📸 OCR 다중 영양제 촬영 모달 */}
       <Modal visible={ocrOpen} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.ocrPopupModalCard}>
@@ -496,13 +651,12 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            {/* 추가된 이미지들 가로 스크롤 영역 */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ocrImageScroll}>
               {pendingImages.map((uri, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.ocrThumbBox}
-                  onPress={() => openImagePicker(index)} // 누르면 해당 인덱스 사진 교체
+                  onPress={() => openImagePicker(index)}
                   activeOpacity={0.8}
                 >
                   <Image source={{ uri }} style={styles.ocrThumbImg} />
@@ -512,7 +666,6 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               ))}
 
-              {/* + 더 등록하기 빈 칸 버튼 */}
               <TouchableOpacity style={styles.ocrAddBox} onPress={() => openImagePicker()} activeOpacity={0.8}>
                 <Text style={styles.ocrAddIcon}>+</Text>
                 <Text style={styles.ocrAddText}>사진 추가</Text>
@@ -575,17 +728,17 @@ const styles = StyleSheet.create({
   modalCloseIcon: { position: 'absolute', top: 12, right: 14, zIndex: 10, padding: 6 },
   modalCloseText: { color: '#AAA', fontSize: 18, fontWeight: 'bold' },
 
-  brewModalContainer: { maxWidth:560, width: '92%', height: '82%', backgroundColor: '#242038', borderRadius: 20, padding: 16, borderWidth: 1.5, borderColor: '#6C5CE7' },
-  topFlaskBox: { flex: 0.2, backgroundColor: '#1B1728', borderRadius: 14, padding: 2, justifyContent: 'space-between', marginBottom: 12 },
+  brewModalContainer: { maxWidth: 560, width: '92%', height: '82%', backgroundColor: '#242038', borderRadius: 20, padding: 16, borderWidth: 1.5, borderColor: '#6C5CE7', justifyContent:'space-between' },
+  topFlaskBox: { flex: 0.35, backgroundColor: '#1B1728', borderRadius: 14, padding: 2, justifyContent: 'space-between', marginBottom: 12 },
   boxLabel: { color: '#8A879E', fontSize: 11, fontWeight: 'bold' },
-  flaskVisual: { alignItems: 'center', justifyContent: 'center' },
-  chamberCauldronImg: { width: '90%', height: '90%', marginBottom: 4},
+  flaskVisual: { flex:1, alignItems: 'center', justifyContent: 'center' },
+  chamberCauldronImg: { resizeMode:'contain', width: '90%', height: '90%', marginBottom: 4 },
   flaskStatusText: { color: '#DDD', fontSize: 12, textAlign: 'center' },
   flaskStatusTextActive: { color: '#FFF', fontSize: 14, textAlign: 'center', fontWeight: 'bold' },
   highlightCount: { color: '#FFD700', fontSize: 15, fontWeight: '900' },
   confirmSmallBtn: { alignSelf: 'flex-end', backgroundColor: '#E056FD', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
   confirmBtnText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
-  bottomInventoryBox: { flex: 0.58, backgroundColor: '#2C2746', borderRadius: 14, padding: 12 },
+  bottomInventoryBox: { flex: 1, backgroundColor: '#2C2746', borderRadius: 14, padding: 12 },
   subTabContainer: { flexDirection: 'row', backgroundColor: '#1B1728', borderRadius: 8, padding: 3, marginBottom: 10 },
   subTabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
   activeSubTab: { backgroundColor: '#6C5CE7' },
@@ -644,12 +797,12 @@ const styles = StyleSheet.create({
   ovalSaveBtn: { width: 54, height: 40, borderRadius: 20, backgroundColor: '#6C5CE7', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#A29BFE' },
   ovalSaveText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
 
-  popupModalCard: { width: '85%', backgroundColor: '#242038', borderRadius: 18, padding: 18, borderWidth: 1.5, borderColor: '#6C5CE7' },
-  popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  popupTitle: { color: '#FFD700', fontSize: 16, fontWeight: 'bold' },
-  questItem: { backgroundColor: '#1B1728', borderRadius: 10, padding: 12, marginBottom: 8 },
-  questName: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
-  questReward: { color: '#A29BFE', fontSize: 11, marginTop: 4 },
+  popupModalCard: { width: '85%', height:'60%', backgroundColor: '#242038', borderRadius: 18, padding: 18, borderWidth: 1.5, borderColor: '#6C5CE7' },
+  popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, padding:10 },
+  popupTitle: {color: '#FFD700', fontSize: 16, fontWeight: 'bold',margin:10},
+  questItem: { backgroundColor: '#1B1728', borderRadius: 10, padding: 10, marginBottom: 15 },
+  questName: { color: '#FFF', fontSize: 13, fontWeight: 'bold', marginTop: 3},
+  questReward: { color: '#A29BFE', fontSize: 11, marginTop: 4, padding:10, marginBottom: 10 },
   attendanceSub: { color: '#DDD', fontSize: 12, marginBottom: 14 },
   attendanceDaysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   dayCircle: { width: 34, height: 44, backgroundColor: '#1B1728', borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#3E3960' },

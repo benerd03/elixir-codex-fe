@@ -6,117 +6,137 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
+
+export interface QuestItem {
+  id: string;
+  title: string;
+  rewardText: string;
+  rewardMatId: string;    // 실제 들어갈 재료 ID (m1 ~ m15)
+  rewardMatName: string;  // 재료명
+  grade: 'Common' | 'Rare' | 'Epic';
+}
 
 interface Props {
   visible: boolean;
   onClose: () => void;
+  // 💡 보상 수령 시 부모(index.tsx)의 재료 인벤토리(materials)를 증가시키는 콜백
+  onClaimReward?: (matId: string, matName: string) => void;
 }
 
-interface QuestItem {
-  id: string;
-  title: string;
-  reward: string;
-  grade: 'Common' | 'Rare' | 'Epic';
-}
-
+// 📜 일일 퀘스트 Mock 데이터
 const DAILY_QUESTS: QuestItem[] = [
-  { id: 'd1', title: '아침 미온수 1잔 마시기', reward: '비타민C 가루 x1', grade: 'Common' },
-  { id: 'd2', title: '오늘의 영양제 섭취 인증', reward: '마그네슘 원액 x1', grade: 'Rare' },
-  { id: 'd3', title: '가벼운 스트레칭 5분', reward: '정제수 x1', grade: 'Common' },
-  { id: 'd4', title: '햇볕 쬐며 산책 10분', reward: '태양의 정화 이슬 x1', grade: 'Common' },
-  { id: 'd5', title: '밤 12시 이전 취침 준비', reward: '달빛 신경 안정석 x1', grade: 'Rare' },
+  { id: 'd1', title: '아침 미온수 1잔 마시기', rewardText: '이슬 한 방울 x1', rewardMatId: 'm1', rewardMatName: '이슬 한 방울', grade: 'Common' },
+  { id: 'd2', title: '오늘의 영양제 섭취 인증', rewardText: '황금 레몬 x1', rewardMatId: 'm3', rewardMatName: '황금 레몬', grade: 'Rare' },
+  { id: 'd3', title: '가벼운 스트레칭 5분', rewardText: '활력초 x1', rewardMatId: 'm5', rewardMatName: '활력초', grade: 'Common' },
+  { id: 'd4', title: '햇볕 쬐며 산책 10분', rewardText: '탱탱 젤리 x1', rewardMatId: 'm2', rewardMatName: '탱탱 젤리', grade: 'Common' },
+  { id: 'd5', title: '밤 12시 이전 취침 준비', rewardText: '평온초 x1', rewardMatId: 'm11', rewardMatName: '평온초', grade: 'Rare' },
 ];
 
+// 📜 주간 퀘스트 Mock 데이터
 const WEEKLY_QUESTS: QuestItem[] = [
-  { id: 'w1', title: '[운동] 주 3회 30분 유산소 운동', reward: '오메가3 오일 + 레시피 스크롤', grade: 'Epic' },
-  { id: 'w2', title: '[루틴] 5일 연속 영양제 인증 완료', reward: '천년삼 원액 x1', grade: 'Epic' },
-  { id: 'w3', title: '[휴식] 주간 평균 7시간 수면 달성', reward: '달빛 이끼 x2', grade: 'Rare' },
-  { id: 'w4', title: '[식습관] 야식 먹지 않기 4회 달성', reward: '공간 왜곡 포만 이끼 x1', grade: 'Epic' },
+  { id: 'w1', title: '[운동] 주 3회 30분 유산소 운동', rewardText: '백옥 진주 x1', rewardMatId: 'm4', rewardMatName: '백옥 진주', grade: 'Epic' },
+  { id: 'w2', title: '[루틴] 5일 연속 영양제 인증 완료', rewardText: '천년 뿌리 x1', rewardMatId: 'm8', rewardMatName: '천년 뿌리', grade: 'Epic' },
+  { id: 'w3', title: '[휴식] 주간 평균 7시간 수면 달성', rewardText: '안정석 x1', rewardMatId: 'm12', rewardMatName: '안정석', grade: 'Rare' },
+  { id: 'w4', title: '[식습관] 야식 먹지 않기 4회 달성', rewardText: '마룡 뿔 x1', rewardMatId: 'm7', rewardMatName: '마룡 뿔', grade: 'Epic' },
 ];
 
-export default function QuestModal({ visible, onClose }: Props) {
+export default function QuestModal({ visible, onClose, onClaimReward }: Props) {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily');
-  const [completed, setCompleted] = useState<string[]>([]);
+  const [claimedIds, setClaimedIds] = useState<string[]>([]);
 
-  const toggleComplete = (id: string) => {
-    if (completed.includes(id)) {
-      setCompleted(completed.filter((cId) => cId !== id));
+  // 🎁 보상 수령 실행 함수
+  const handleClaim = (quest: QuestItem) => {
+    if (claimedIds.includes(quest.id)) return;
+
+    // 1. 수령 상태 기록
+    setClaimedIds((prev) => [...prev, quest.id]);
+
+    // 2. 부모 인벤토리 데이터로 재료 추가
+    if (onClaimReward) {
+      onClaimReward(quest.rewardMatId, quest.rewardMatName);
     } else {
-      setCompleted([...completed, id]);
+      Alert.alert('🎁 보상 수령 완료', `${quest.rewardText}을(를) 획득했습니다!`);
     }
   };
 
   const currentList = activeTab === 'daily' ? DAILY_QUESTS : WEEKLY_QUESTS;
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        {/* 기기 화면 비율에 맞춘 반응형 박스 */}
-        <View style={styles.modalBox}>
-          
-          {/* 상단 타이틀 */}
-          <Text style={styles.headerTitle}>🎯 퀘스트 게시판</Text>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalBox}>
+              {/* 상단 헤더 */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.headerTitle}>🎯 모험가 의뢰 게시판</Text>
+                <TouchableOpacity onPress={onClose}>
+                  <Text style={styles.closeIcon}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
-          {/* 상단 탭 바 */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'daily' && styles.activeTabButton]}
-              onPress={() => setActiveTab('daily')}
-            >
-              <Text style={[styles.tabText, activeTab === 'daily' && styles.activeTabText]}>
-                일일 퀘스트
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'weekly' && styles.activeTabButton]}
-              onPress={() => setActiveTab('weekly')}
-            >
-              <Text style={[styles.tabText, activeTab === 'weekly' && styles.activeTabText]}>
-                주간 퀘스트
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 내부 스크롤 영역 (개수가 늘어나도 박스 크기 유지) */}
-          <ScrollView
-            style={styles.questScroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={true}
-          >
-            {currentList.map((item) => {
-              const isDone = completed.includes(item.id);
-              return (
+              {/* 탭 버튼 영역 (일일 / 주간) */}
+              <View style={styles.tabContainer}>
                 <TouchableOpacity
-                  key={item.id}
-                  style={[styles.questCard, isDone && styles.questCardDone]}
-                  onPress={() => toggleComplete(item.id)}
+                  style={[styles.tabButton, activeTab === 'daily' && styles.activeTabButton]}
+                  onPress={() => setActiveTab('daily')}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.checkCircle}>
-                    <Text style={styles.checkIcon}>{isDone ? '✓' : ''}</Text>
-                  </View>
-
-                  <View style={styles.questInfo}>
-                    <Text style={[styles.questTitle, isDone && styles.questTitleDone]}>
-                      {item.title}
-                    </Text>
-                    <Text style={styles.rewardText}>
-                      🎁 보상: {item.reward}
-                    </Text>
-                  </View>
+                  <Text style={[styles.tabText, activeTab === 'daily' && styles.activeTabText]}>
+                    일일 퀘스트
+                  </Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
 
-          {/* 하단 고정 닫기 버튼 */}
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeBtnText}>닫기</Text>
-          </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tabButton, activeTab === 'weekly' && styles.activeTabButton]}
+                  onPress={() => setActiveTab('weekly')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.tabText, activeTab === 'weekly' && styles.activeTabText]}>
+                    주간 퀘스트
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 퀘스트 목록 스크롤 */}
+              <ScrollView style={styles.questScroll} contentContainerStyle={styles.scrollContent}>
+                {currentList.map((item) => {
+                  const isClaimed = claimedIds.includes(item.id);
+                  return (
+                    <View
+                      key={item.id}
+                      style={[styles.questCard, isClaimed && styles.questCardDone]}
+                    >
+                      {/* 좌측: 퀘스트 내용 및 보상 */}
+                      <View style={styles.questInfo}>
+                        <Text style={[styles.questTitle, isClaimed && styles.questTitleDone]} numberOfLines={2}>
+                          {item.title}
+                        </Text>
+                        <Text style={styles.rewardText}>보상: {item.rewardText}</Text>
+                      </View>
+
+                      {/* 우측: 36x36 정사각형 수령 버튼 */}
+                      <TouchableOpacity
+                        style={[styles.squareClaimBtn, isClaimed && styles.squareClaimBtnDone]}
+                        disabled={isClaimed}
+                        onPress={() => handleClaim(item)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.squareClaimBtnText}>
+                          {isClaimed ? '완료' : '수령'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -130,31 +150,42 @@ const styles = StyleSheet.create({
   },
   modalBox: {
     width: '90%',
-    height: '75%', // 기기 화면 세로 길이의 75% 비율 차지
-    maxHeight: 650, // 대화면 태블릿 대비 최대 높이 제한
+    maxWidth: 500,
+    height: '75%',
+    maxHeight: 560,
     backgroundColor: '#242038',
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
     borderWidth: 1.5,
     borderColor: '#6C5CE7',
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   headerTitle: {
-    color: '#FFF',
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  closeIcon: {
+    color: '#8A879E',
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 14,
+    padding: 4,
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#181528',
     borderRadius: 10,
     padding: 4,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 9,
     alignItems: 'center',
     borderRadius: 8,
   },
@@ -171,7 +202,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   questScroll: {
-    flex: 1, // 상단 탭과 하단 닫기 버튼 사이의 남은 공간 전체를 스크롤 뷰로 할당
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 8,
@@ -179,41 +210,27 @@ const styles = StyleSheet.create({
   questCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2F2B4A',
-    padding: 14,
+    justifyContent: 'space-between',
+    backgroundColor: '#1B1728',
+    padding: 12,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#3E3960',
   },
   questCardDone: {
-    backgroundColor: '#1E1B2E',
-    borderColor: '#2ECC71',
-    opacity: 0.7,
-  },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6C5CE7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    backgroundColor: '#181528',
-  },
-  checkIcon: {
-    color: '#2ECC71',
-    fontWeight: 'bold',
-    fontSize: 14,
+    backgroundColor: '#161322',
+    borderColor: '#2D2845',
+    opacity: 0.65,
   },
   questInfo: {
     flex: 1,
+    marginRight: 10,
   },
   questTitle: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   questTitleDone: {
@@ -221,19 +238,25 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   rewardText: {
-    color: '#FFD700',
+    color: '#A29BFE',
     fontSize: 11,
   },
-  closeBtn: {
-    backgroundColor: '#6C5CE7',
-    paddingVertical: 13,
-    borderRadius: 10,
+  // 🔲 36x36 정사각형 수령 버튼
+  squareClaimBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#E056FD',
+    borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
   },
-  closeBtnText: {
+  squareClaimBtnDone: {
+    backgroundColor: '#3E3960',
+  },
+  squareClaimBtnText: {
     color: '#FFF',
+    fontSize: 11,
     fontWeight: 'bold',
-    fontSize: 14,
+    textAlign: 'center',
   },
 });
