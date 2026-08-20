@@ -12,8 +12,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+
 
 // 기존 데이터 및 이미지 헬퍼
 import { MOCK_MATERIALS, MOCK_ELIXIRS, ElixirCardData } from '../../src/mockData';
@@ -275,61 +277,86 @@ const [brewModalOpen, setBrewModalOpen] = useState(false);
     setShowAdvisor(false);
   };
 
-  // -------------------------------------------------------------
-  // 📸 카메라/갤러리 열기 함수
-  // -------------------------------------------------------------
-  const openImagePicker = async (indexToReplace?: number) => {
-    Alert.alert(
-      '영양제 사진 업로드',
-      '사진을 가져올 방식을 선택해주세요.',
-      [
-        {
-          text: '카메라로 촬영',
-          onPress: async () => {
-            const permission = await ImagePicker.requestCameraPermissionsAsync();
-            if (permission.granted) {
-              const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-              });
-              handlePickerResult(result, indexToReplace);
-            }
-          },
-        },
-        {
-          text: '앨범에서 선택',
-          onPress: async () => {
-            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (permission.granted) {
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-              });
-              handlePickerResult(result, indexToReplace);
-            }
-          },
-        },
-        { text: '취소', style: 'cancel' },
-      ]
-    );
-  };
+// 1. 결과 받아 배열에 넣는 함수
+const handlePickerResult = (uri: string, indexToReplace?: number) => {
+  if (indexToReplace !== undefined) {
+    const updatedImages = [...pendingImages];
+    updatedImages[indexToReplace] = uri;
+    setPendingImages(updatedImages);
+  } else {
+    setPendingImages((prev) => [...prev, uri]);
+  }
+};
 
-  const handlePickerResult = (result: ImagePicker.ImagePickerResult, indexToReplace?: number) => {
-    if (result.canceled) return;
-    const newUri = result.assets[0].uri;
-
-    if (indexToReplace !== undefined) {
-      const updatedImages = [...pendingImages];
-      updatedImages[indexToReplace] = newUri;
-      setPendingImages(updatedImages);
-    } else {
-      setPendingImages((prev) => [...prev, newUri]);
+// 2. 피커 실행 함수 (웹이면 파일창 바로 열고, 모바일이면 Alert 띄움)
+const openImagePicker = async (indexToReplace?: number) => {
+  // 🌐 웹 환경 대응
+  if (Platform.OS === 'web') {
+    if (typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e: any) => {
+        const file = e.target?.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const url = event.target?.result as string;
+            if (url) {
+              handlePickerResult(url, indexToReplace);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
     }
-  };
+    return;
+  }
+
+  // 📱 모바일 환경 (작성하신 Alert 코드)
+  Alert.alert(
+    '영양제 사진 업로드',
+    '사진을 가져올 방식을 선택해주세요.',
+    [
+      {
+        text: '카메라로 촬영',
+        onPress: async () => {
+          const permission = await ImagePicker.requestCameraPermissionsAsync();
+          if (permission.granted) {
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              handlePickerResult(result.assets[0].uri, indexToReplace);
+            }
+          }
+        },
+      },
+      {
+        text: '앨범에서 선택',
+        onPress: async () => {
+          const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (permission.granted) {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              handlePickerResult(result.assets[0].uri, indexToReplace);
+            }
+          }
+        },
+      },
+      { text: '취소', style: 'cancel' },
+    ]
+  );
+};
 
   // -------------------------------------------------------------
   // 🚀 백엔드로 이미지 전송 & OCR 인증 로직
