@@ -39,19 +39,22 @@ export interface MaterialData {
 export const MOCK_MATERIALS: MaterialData[] = [
   { id: 'm1', name: '이슬 한 방울', grade: 'Common', count: 3, icon: '💧' },
   { id: 'm2', name: '탱탱 젤리', grade: 'Common', count: 2, icon: '🍮' },
-  { id: 'm3', name: '황금 레몬', grade: 'Rare', count: 1, icon: '🍋' },
+  { id: 'm3', name: '황금 레몬', grade: 'Rare', count: 2, icon: '🍋' },
   { id: 'm4', name: '백옥 진주', grade: 'Epic', count: 1, icon: '⚪' },
   { id: 'm5', name: '활력초', grade: 'Common', count: 4, icon: '🌿' },
   { id: 'm6', name: '심장 태엽', grade: 'Rare', count: 2, icon: '⚙️' },
-  { id: 'm7', name: '마룡 뿔', grade: 'Epic', count: 1, icon: '🐂' },
+  { id: 'm7', name: '마룡 뿔', grade: 'Rare', count: 1, icon: '🐂' },
   { id: 'm8', name: '천년 뿌리', grade: 'Epic', count: 1, icon: '🪵' },
   { id: 'm9', name: '홀쭉 열매', grade: 'Common', count: 3, icon: '🫐' },
   { id: 'm10', name: '녹차잎', grade: 'Common', count: 2, icon: '🍃' },
   { id: 'm11', name: '포만 이끼', grade: 'Rare', count: 2, icon: '🌱' },
-  { id: 'm12', name: '바나바잎', grade: 'Rare', count: 1, icon: '🍂' },
+  { id: 'm12', name: '바나바잎', grade: 'Epic', count: 1, icon: '🍂' },
   { id: 'm13', name: '평온초', grade: 'Common', count: 3, icon: '🌾' },
   { id: 'm14', name: '안정석', grade: 'Rare', count: 2, icon: '🪨' },
   { id: 'm15', name: '해독 엉겅퀴', grade: 'Epic', count: 1, icon: '🌺' },
+  // ✨ 5번 [온전한 조화] 레시피 필수 재료 추가
+  { id: 'm16', name: '심해 오일', grade: 'Rare', count: 2, icon: '🌊' },
+  { id: 'm17', name: '황금 포자', grade: 'Common', count: 2, icon: '🍄' },
 ];
 
 const POTION_FALLBACK_URL =

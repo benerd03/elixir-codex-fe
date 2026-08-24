@@ -13,7 +13,6 @@ import {
 import { MOCK_MATERIALS, MaterialData } from '../../src/mockData';
 import { getMaterialImage } from '../../constants/materialImages';
 
-// 재료별 실제 성분 및 효능 매핑 데이터
 const MATERIAL_DETAIL_MAP: Record<string, { original: string; desc: string }> = {
   m1: { original: '히알루론산', desc: '피부 속 깊은 보습 및 수분막 형성' },
   m2: { original: '콜라겐 펩타이드', desc: '피부 탄력 복구 및 조직 결속력 강화' },
@@ -30,6 +29,9 @@ const MATERIAL_DETAIL_MAP: Record<string, { original: string; desc: string }> = 
   m13: { original: 'L-테아닌', desc: '뇌파 안정, 스트레스 완화 및 알파파 방출' },
   m14: { original: '마그네슘', desc: '근육 이완, 신경계 평정 및 깊은 숙면 유도' },
   m15: { original: '밀크씨슬 (실리마린)', desc: '간 피로 해소 및 체내 독소 정화' },
+  // ✨ 5번 고정 레시피 영양 성분 매핑
+  m16: { original: '오메가3 (EPA·DHA)', desc: '세포막 유동성 개선 및 전신 미세 염증 억제' },
+  m17: { original: '프로바이오틱스 (유산균)', desc: '장내 유익균 형성 및 영양소 흡수율 증대' },
 };
 
 export default function MaterialsScreen() {

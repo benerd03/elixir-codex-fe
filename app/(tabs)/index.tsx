@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ImageBackground,
   Image,
   Modal,
@@ -15,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as ImagePicker from 'expo-image-picker';
 
@@ -202,6 +202,7 @@ const [brewModalOpen, setBrewModalOpen] = useState(false);
           ingredientScienceList: [],
           stats: backendRes.stats || { 활력마나량: 85, 피로무력화: 80, 대사가속도: 75 },
         };
+
       } else {
         // ⭐ 스마트 Fallback: 4대 테마 유지 및 동적 연성 분기
         const isHarmonious =
@@ -409,12 +410,7 @@ const openImagePicker = async (indexToReplace?: number) => {
           style={styles.backgroundImage}
           resizeMode="cover"
         >
-          {/* 1. 우측 상단 메뉴 버튼 */}
-          <View style={styles.topRightHeader}>
-            <TouchableOpacity onPress={() => Alert.alert('메뉴', '시스템 설정')} activeOpacity={0.8}>
-              <Image source={require('../../assets/images/home_menu.png')} style={styles.menuIconImg} />
-            </TouchableOpacity>
-          </View>
+
 
           {/* 2. 우측 사이드 플로팅 바 */}
           <ImageBackground
@@ -713,7 +709,6 @@ const styles = StyleSheet.create({
   contentWrapper: { flex: 1, maxWidth: 600, width: '100%', marginHorizontal: 'auto' },
   backgroundImage: { flex: 1, width: '100%', height: '100%' },
 
-  topRightHeader: { position: 'absolute', top: 20, right: 16, zIndex: 20 },
   menuIconImg: { width: 50, height: 50, resizeMode: 'contain' },
 
   sideMenuContainer: {
