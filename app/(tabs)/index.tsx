@@ -24,6 +24,7 @@ import { getElixirImage } from '../../constants/elixirImages';
 import ElixirDetailModal from '../../src/components/ElixirDetailModal';
 import QuestModal from '../../src/components/QuestModal';
 import AttendanceModal from '@/src/components/AttendanceModal';
+import { ApiService } from '../../src/serivices/api';
 
 
 
@@ -353,36 +354,55 @@ const openImagePicker = async (indexToReplace?: number) => {
   // -------------------------------------------------------------
   // 🚀 백엔드로 이미지 전송 & OCR 인증 로직
   // -------------------------------------------------------------
-  const handleVerifySupplements = async () => {
-    if (pendingImages.length === 0) {
-      Alert.alert('알림', '등록할 영양제 사진을 최소 1장 이상 추가해 주세요.');
-      return;
-    }
+// 🚀 index.tsx의 영양제 등록 핸들러 (ApiService 연동)
+const handleVerifySupplements = async () => {
+  if (pendingImages.length === 0) {
+    Alert.alert('알림', '등록할 영양제 사진을 최소 1장 이상 추가해 주세요.');
+    return;
+  }
 
-    setIsUploading(true);
+  setIsUploading(true);
+  const successList: any[] = [];
 
-    try {
-      setTimeout(() => {
-        setIsUploading(false);
-        setOcrOpen(false);
+  try {
+    for (let i = 0; i < pendingImages.length; i++) {
+      const uri = pendingImages[i];
+      console.log(`🚀 [OCR 요청 ${i + 1}/${pendingImages.length}] 백엔드 전송 중...`);
 
-        const newSupplements = pendingImages.map((uri, idx) => ({
-          id: `new_s_${Date.now()}_${idx}`,
-          name: `AI 인식 완료 (영양제 ${idx + 1})`,
+      // ApiService.verifySupplementPhoto 호출 (POST /api/supplements/verify)
+      const res = await ApiService.verifySupplementPhoto(uri);
+      console.log(`✨ [OCR 완료 ${i + 1}]`, res);
+
+      if (res.isVerified) {
+        successList.push({
+          id: `supp_${res.supplementLogId || Date.now()}_${i}`,
+          name: res.productName || '인증된 영양제',
           time: '방금 전 인증 완료',
           photoUrl: uri,
-        }));
-
-        setTodaySupplements((prev) => [...newSupplements, ...prev]);
-        setPendingImages([]);
-
-        Alert.alert('✅ 인증 성공!', 'GPT-4o Vision이 영양제를 확인하고 가마솥에 담았습니다.');
-      }, 2500);
-    } catch (error) {
-      setIsUploading(false);
-      Alert.alert('인증 실패', '서버와 통신 중 문제가 발생했습니다.');
+        });
+      }
     }
-  };
+
+    if (successList.length === 0) {
+      throw new Error('영양제 라벨을 인식하지 못했습니다. 선명한 사진으로 다시 시도해 주세요.');
+    }
+
+    // 화면의 [오늘 인증] 목록 갱신 및 팝업 닫기
+    setTodaySupplements((prev) => [...successList, ...prev]);
+    setPendingImages([]);
+    setOcrOpen(false);
+
+    Alert.alert(
+      '✅ 인증 완료!',
+      `총 ${successList.length}개의 영양제가 인식되어 가마솥 베이스로 등록되었습니다.`
+    );
+  } catch (error: any) {
+    console.error('⚠️ 영양제 인증 에러:', error);
+    Alert.alert('인증 실패', error.message || '서버 통신 중 문제가 발생했습니다.');
+  } finally {
+    setIsUploading(false);
+  }
+};
 
   return (
     <SafeAreaView style={styles.safeContainer}>
