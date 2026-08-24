@@ -16,6 +16,8 @@ export const MATERIAL_IMAGE_MAP: Record<string, ImageSourcePropType> = {
   m13: require('../assets/images/mat_calm_herb.png'),
   m14: require('../assets/images/mat_stability_stone.png'),
   m15: require('../assets/images/mat_detox_thistle.png'),
+  m16: require('../assets/images/mat_golden_spore.png'),
+  m17: require('../assets/images/mat_deep_sea_oil.png'),
 };
 
 export const getMaterialImage = (id: string): ImageSourcePropType | undefined => {
