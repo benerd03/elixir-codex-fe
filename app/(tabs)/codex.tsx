@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Image,
   Modal,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { MOCK_ELIXIRS, ElixirCardData } from '../../src/mockData';
 import ElixirDetailModal from '../../src/components/ElixirDetailModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // 5대 카테고리 정의
 const CATEGORIES = [

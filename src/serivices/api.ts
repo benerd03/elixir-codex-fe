@@ -200,32 +200,42 @@ export const ApiService = {
     }
   },
 
-  // 7. 영양제 사진 OCR 인증 (POST /api/supplements/verify)
+// 7. 영양제 사진 OCR 인증 (POST /api/supplements/verify)
   verifySupplementPhoto: async (imageUri: string) => {
-    try {
-      const formData = new FormData();
+    const formData = new FormData();
+
+    // 🌐 Expo Web (blob/data URI) 및 모바일 URI 완벽 변환
+    if (imageUri.startsWith('blob:') || imageUri.startsWith('data:')) {
+      const blobRes = await fetch(imageUri);
+      const blob = await blobRes.blob();
+      formData.append('image', blob, `supplement_${Date.now()}.jpg`);
+    } else {
       formData.append('image', {
         uri: imageUri,
-        name: 'supplement.jpg',
+        name: `supplement_${Date.now()}.jpg`,
         type: 'image/jpeg',
       } as any);
-
-      const response = await fetch(`${BASE_URL}/api/supplements/verify`, {
-        method: 'POST',
-        headers: getHeaders(true),
-        body: formData,
-      });
-      if (!response.ok) throw new Error('영양제 사진 인증 실패');
-      return await response.json();
-    } catch (e) {
-      console.warn('영양제 사진 업로드 API 미연결 -> Mock 인증 성공 반환:', e);
-      return {
-        supplementLogId: 1,
-        productName: '비타민 C & 글루타치온 복합제',
-        confidenceScore: 95,
-        isVerified: true,
-        isAffiliateProduct: false,
-      };
     }
-  },
-};
+
+    const token = getStoredToken();
+    console.log('🚀 [OCR 요청] 백엔드 전송 시작:', token);
+
+    const response = await fetch(`${BASE_URL}/api/supplements/verify`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // ⚠️ multipart/form-data 전송 시 Content-Type은 브라우저가 boundary와 함께 자동 지정하므로 헤더에서 제외
+      },
+      body: formData,
+    });
+
+    const resData = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error('❌ [OCR 백엔드 실패]', response.status, resData);
+      throw new Error(resData.message || `영양제 사진 인증 실패 (HTTP ${response.status})`);
+    }
+
+    console.log('✨ [OCR 백엔드 성공 응답]', resData);
+    return resData; // { supplementLogId, productName, confidenceScore, isVerified, isAffiliateProduct }
+  } };
