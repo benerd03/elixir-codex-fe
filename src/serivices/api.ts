@@ -23,6 +23,49 @@ const getHeaders = (isMultipart = false) => {
   return headers;
 };
 
+// 🌐 웹 브라우저 환경 이미지 압축 헬퍼 함수 (413 Payload Too Large 방어)
+const compressImageWeb = (dataUriOrBlobUrl: string, maxWidth = 800, quality = 0.6): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return reject(new Error('브라우저 환경이 아닙니다.'));
+    }
+    const img = document.createElement('img');
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxWidth) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxWidth) / height);
+          height = maxWidth;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas 생성 실패'));
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('이미지 압축 변환 실패'));
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = (e) => reject(e);
+    img.src = dataUriOrBlobUrl;
+  });
+};
+
 // ==========================================
 // 🔑 유저 인증 API (회원가입, 로그인, 내 정보 조회)
 // ==========================================
@@ -200,15 +243,24 @@ export const ApiService = {
     }
   },
 
+
+  
 // 7. 영양제 사진 OCR 인증 (POST /api/supplements/verify)
   verifySupplementPhoto: async (imageUri: string) => {
     const formData = new FormData();
 
-    // 🌐 Expo Web (blob/data URI) 및 모바일 URI 완벽 변환
-    if (imageUri.startsWith('blob:') || imageUri.startsWith('data:')) {
-      const blobRes = await fetch(imageUri);
-      const blob = await blobRes.blob();
-      formData.append('image', blob, `supplement_${Date.now()}.jpg`);
+    // 🚀 압축 적용 후 전송 (413 Payload Too Large 방어)
+    if (typeof window !== 'undefined') {
+      try {
+        const compressedBlob = await compressImageWeb(imageUri, 800, 0.6);
+        console.log(`📦 [이미지 압축 완료] 전송 크기: ${(compressedBlob.size / 1024).toFixed(1)} KB`);
+        formData.append('image', compressedBlob, `supplement_${Date.now()}.jpg`);
+      } catch (err) {
+        console.warn('압축 실패로 원본 Blob 변환 시도:', err);
+        const blobRes = await fetch(imageUri);
+        const blob = await blobRes.blob();
+        formData.append('image', blob, `supplement_${Date.now()}.jpg`);
+      }
     } else {
       formData.append('image', {
         uri: imageUri,
@@ -218,13 +270,12 @@ export const ApiService = {
     }
 
     const token = getStoredToken();
-    console.log('🚀 [OCR 요청] 백엔드 전송 시작:', token);
+    console.log('🚀 [OCR 요청] 압축 이미지 백엔드 전송 시작:', token);
 
     const response = await fetch(`${BASE_URL}/api/supplements/verify`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        // ⚠️ multipart/form-data 전송 시 Content-Type은 브라우저가 boundary와 함께 자동 지정하므로 헤더에서 제외
       },
       body: formData,
     });
@@ -237,5 +288,6 @@ export const ApiService = {
     }
 
     console.log('✨ [OCR 백엔드 성공 응답]', resData);
-    return resData; // { supplementLogId, productName, confidenceScore, isVerified, isAffiliateProduct }
-  } };
+    return resData;
+  },
+};
