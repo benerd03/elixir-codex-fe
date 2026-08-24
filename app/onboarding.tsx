@@ -235,94 +235,89 @@ export default function OnboardingScreen() {
     };
   };
 
-// 🌑 컷씬 및 백엔드 API 연동 시퀀스 (이미지 로딩 완벽 방어형)
-  const triggerTowerBrewingSequence = async () => {
-    setShowTowerCutscene(true);
-    setIsBrewing(true);
+// app/onboarding.tsx 내부 triggerTowerBrewingSequence 교체
 
-    // 1. 실제 백엔드 가비아 공인 IP 서버 주소
-    const SERVER_URL = 'https://1-201-116-227.sslip.io';
+const triggerTowerBrewingSequence = async () => {
+  setShowTowerCutscene(true);
+  setIsBrewing(true);
 
-    // 2. 로그인 시 저장된 실제 JWT 토큰 가져오기
- let authToken = '';
+  // 1. JWT 토큰 추출
+  let authToken = '';
+  if (typeof window !== 'undefined' && window.localStorage) {
+    authToken = window.localStorage.getItem('jwtToken') || '';
+  }
 
-if (typeof window !== 'undefined' && window.localStorage) {
-  authToken = window.localStorage.getItem('jwtToken') || '';
-}
+  try {
+    const registeredNames = photoList.map((p) => p.name).join(', ');
+    const combinedFreeText = `고민/증상: ${userPainText || '피로 회복'} / 복용 중인 영양제: ${registeredNames || '없음'}`;
 
-// 🔍 디버깅용: 콘솔에 진짜 토큰이 찍히는지 확인
-console.log('📌 백엔드로 전송할 토큰:', authToken);
+    // 2. 백엔드 API 호출 (POST /api/special-elixirs)
+    const response = await fetch('https://1-201-116-227.sslip.io/api/special-elixirs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ freeText: combinedFreeText }),
+    });
 
-if (!authToken || authToken.startsWith('test-mock') || authToken.startsWith('mock-jwt')) {
-  console.warn('⚠️ 진짜 JWT 토큰이 없습니다. 백엔드 로그인 후 다시 시도해야 합니다.');
-}
+    const resData = await response.json().catch(() => ({}));
 
-    try {
-      const registeredNames = photoList.map((p) => p.name).join(', ');
-      const combinedFreeText = `고민/증상: ${userPainText} / 복용 중인 영양제: ${registeredNames || '없음'}`;
-
-      // 🚀 백엔드 명세서 v1.1 규격: Authorization 헤더 포함 호출
-      const response = await fetch(`${SERVER_URL}/api/special-elixirs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ freeText: combinedFreeText }),
-      });
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.message || `서버 응답 오류 (HTTP ${response.status})`);
-      }
-
-      const resData = await response.json();
-      console.log('📦 백엔드 응답 데이터 원본:', resData);
-
-      // 🔍 백엔드가 반환한 이미지 URL 키값 안전 추출 (imageUrl, image_url, url 등)
-      const rawImgUrl = resData.imageUrl || resData.image_url || resData.url || resData.image;
-
-      // 🖼️ AI 생성 이미지 우선, 없거나 유효하지 않으면 로컬 에셋/폴백 풀에서 무조건 연결
-      let finalImageSource: any = null;
-      if (rawImgUrl && typeof rawImgUrl === 'string' && rawImgUrl.startsWith('http')) {
-        finalImageSource = { uri: rawImgUrl };
+    // 🚨 서버가 4xx / 5xx 응답을 보낸 경우 (더미로 넘기지 않고 실제 서버 메시지 출력)
+    if (!response.ok) {
+      setShowTowerCutscene(false);
+      setIsBrewing(false);
+      
+      const serverErrMsg = resData.message || `서버 오류가 발생했습니다. (HTTP ${response.status})`;
+      if (Platform.OS === 'web') {
+        window.alert(`연성 실패: ${serverErrMsg}`);
       } else {
-        finalImageSource = getElixirImage('energy_01') || { uri: RANDOM_ELIXIR_ART_POOL[0] };
+        Alert.alert('연성 실패', serverErrMsg);
       }
-
-      setTimeout(() => {
-        setShowTowerCutscene(false);
-        setIsBrewing(false);
-
-        const serverElixir: SignatureElixir = {
-          name: resData.name || '늘해랑의 특제 신비 비약',
-          grade: resData.grade === 'PRISMATIC_LEGENDARY' ? 'Prismatic' : 'Epic',
-          imageSource: finalImageSource,
-          brewingLore: resData.cardDescription || resData.brewingLore || '용사님의 상태를 진단하여 연성된 맞춤형 비약입니다.',
-          adviserComment: resData.adviserComment || '"이 포션이 용사님의 아픔을 싹 낫게 해줄 거야!"',
-          scienceDesc: resData.scientificExplanation || resData.scienceDesc || '맞춤형 영양 성분이 대사 회로를 활성화합니다.',
-          stats: resData.stats || {
-            회복탄력도: 95,
-            피로저항력: 90,
-            생체활력도: 92,
-          },
-        };
-
-        setSignatureElixir(serverElixir);
-        setIsCardModalOpen(true);
-      }, 2300);
-
-    } catch (error: any) {
-      console.warn('백엔드 API 미연결 또는 응답 오류 발생 -> 안전 폴백 데이터 실행:', error.message);
-      setTimeout(() => {
-        setShowTowerCutscene(false);
-        setIsBrewing(false);
-        const fallbackCard = generateFallbackElixir();
-        setSignatureElixir(fallbackCard);
-        setIsCardModalOpen(true);
-      }, 2300);
+      return;
     }
-  };
+
+    // 3. 정상 응답(200 OK) 수신 시 카드 매핑
+    console.log('✨ 백엔드 AI 생성 응답 원본:', resData);
+
+    const rawImgUrl = resData.imageUrl || resData.image_url || resData.url;
+    const finalImageSource = rawImgUrl ? { uri: rawImgUrl } : getElixirImage('energy_01');
+
+    setTimeout(() => {
+      setShowTowerCutscene(false);
+      setIsBrewing(false);
+
+      const serverElixir: SignatureElixir = {
+        name: resData.name || '늘해랑의 특제 비약',
+        grade: resData.grade === 'PRISMATIC_LEGENDARY' ? 'Prismatic' : 'Epic',
+        imageSource: finalImageSource,
+        brewingLore: resData.cardDescription || '맞춤형 영양 성분이 결합되어 탄생한 시그니처 비약입니다.',
+        adviserComment: resData.adviserComment || '"몸에 딱 맞는 완벽한 비약이야!"',
+        scienceDesc: resData.scientificExplanation || '유효 성분이 체내 대사 회로를 활성화합니다.',
+        stats: resData.stats || {
+          회복탄력도: 95,
+          피로저항력: 90,
+          생체활력도: 92,
+        },
+      };
+
+      setSignatureElixir(serverElixir);
+      setIsCardModalOpen(true);
+    }, 2000);
+
+  } catch (networkError: any) {
+    // 🌐 실제 네트워크 물리 단절 / CORS 차단 등 fetch 자체가 실패한 경우
+    console.error('네트워크 연결 실패:', networkError);
+    setShowTowerCutscene(false);
+    setIsBrewing(false);
+
+    if (Platform.OS === 'web') {
+      window.alert(`서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.\n(${networkError.message})`);
+    } else {
+      Alert.alert('네트워크 오류', '서버에 연결할 수 없습니다.');
+    }
+  }
+};
 
   const handleCloseCardModal = () => {
     setIsCardModalOpen(false);
