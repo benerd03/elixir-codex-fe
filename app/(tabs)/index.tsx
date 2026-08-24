@@ -27,6 +27,7 @@ import AttendanceModal from '@/src/components/AttendanceModal';
 
 
 
+    
 // 🧪 [백엔드 연동 & 테마/등급 변환 내장 로직]
 const BACKEND_BASE_URL = 'http://https://1-201-116-227.sslip.io'; // 💡 백엔드 공인 IP 또는 localhost
 
@@ -143,142 +144,123 @@ const [brewModalOpen, setBrewModalOpen] = useState(false);
     }
   };
 
-
-
-
-
   
-//🧪 가마솥 연성 확정 핸들러
-  const handleConfirmBrew = async () => {
-    setBrewModalOpen(false);
-    setIsBrewing(true);
+// 🧪 가마솥 연성 확정 핸들러
+const handleConfirmBrew = async () => {
+  setBrewModalOpen(false);
+  setIsBrewing(true);
 
-    try {
-      // 1. 투입된 재료 목록 추출 및 ID 파싱
-      const chosenMats = (MOCK_MATERIALS || []).filter((m) => selectedMaterials.includes(m.id));
-      const matNames = chosenMats.map((m) => m.name);
-      
-      const numericIds = selectedMaterials.map((id, idx) => {
-        const parsed = parseInt(id.replace(/[^0-9]/g, ''), 10);
-        return isNaN(parsed) ? idx + 1 : parsed;
-      });
-
-      // 2. 백엔드 통신 시도 (실제 JWT 토큰 설정 시 작동)
-      const userToken = 'YOUR_AUTH_JWT_TOKEN';
-      let backendRes: any = null;
-
-      if (userToken && userToken !== 'YOUR_AUTH_JWT_TOKEN') {
-        try {
-          backendRes = await requestSynthesizeElixir(
-            { ingredientCardIds: numericIds, themeCategory: 'FATIGUE_ENERGY' },
-            userToken
-          );
-        } catch (e) {
-          console.warn('Backend Synthesize failed, fallback triggered');
-        }
-      }
-
-      let finalElixir: ElixirCardData;
-
-      // 3. 백엔드 응답이 유효한 경우 매핑
-      if (backendRes && backendRes.name) {
-        finalElixir = {
-          id: `elixir_${backendRes.id}`,
-          name: backendRes.name,
-          grade: toFrontendGrade(backendRes.grade),
-          themeCategory: toFrontendTheme(backendRes.themeCategory),
-          imageUrl: backendRes.imageUrl,
-          imageSource: getElixirImage(backendRes.id === 5 ? 'fatigue_01' : 'skin_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
-          isUnlocked: true,
-          serialNumber: backendRes.serialNumber ? `#${backendRes.serialNumber}` : undefined,
-          supplementSummary: todaySupplements.length > 0 
-            ? todaySupplements.map((s) => s.name).join(', ') 
-            : '오늘 인증된 영양제 복합체',
-          ingredientSummary: backendRes.ingredientSummary || (selectedMaterials.length > 0 ? `투입 재료 ${selectedMaterials.length}종` : '투입 재료 없음'),
-          brewingLore: backendRes.cardDescription || '가마솥 안에서 신비로운 기운이 피어오르며 특별한 비약이 완성되었습니다.',
-          adviserComment: backendRes.adviserComment || '훌륭한 연성 결과물이야!',
-          recipeHint: '특수 성분 배합 시너지',
-          scienceDesc: backendRes.scientificExplanation || '신체 대사 활성화 및 건강 증진 효과',
-          ingredientScienceList: [],
-          stats: backendRes.stats || { 활력마나량: 85, 피로무력화: 80, 대사가속도: 75 },
-        };
-
-      } else {
-        // ⭐ 스마트 Fallback: 4대 테마 유지 및 동적 연성 분기
-        const isHarmonious =
-          selectedMaterials.includes('m3') ||
-          selectedMaterials.length >= 3 ||
-          matNames.some((n) => n.includes('레몬') || n.includes('안정석'));
-
-        if (isHarmonious) {
-          finalElixir = {
-            id: `elixir_5_${Date.now()}`,
-            name: '온전한 조화의 황금 엘릭서',
-            grade: 'Epic',
-            themeCategory: '피로/에너지',
-            imageSource: getElixirImage('elixir_5') || (MOCK_ELIXIRS[0]?.imageSource as any),
-            isUnlocked: true,
-            serialNumber: `#${Math.floor(1000 + Math.random() * 9000)}`,
-            supplementSummary: todaySupplements.length > 0 ? todaySupplements.map((s) => s.name).join(', ') : '오늘의 영양제 배합',
-            ingredientSummary: matNames.length > 0 ? matNames.join(', ') : '황금 레몬, 심해 오일, 안정석',
-            brewingLore: '가마솥 안에서 눈부신 황금빛 소용돌이가 일어나며 전신의 활력과 면역을 극대화하는 온전한 조화의 비약이 탄생했습니다!',
-            adviserComment: '모든 성분과 재료가 한 치의 오차도 없이 완벽한 조화를 이루었어!',
-            recipeHint: '황금 레몬 + 심해 오일 + 안정석 + 유산균 공식',
-            scienceDesc: '비타민C의 항산화, 마그네슘의 신경 이완, 오메가3의 순환 촉진이 복합 시너지를 일으켜 전신 대사를 정상화합니다.',
-            ingredientScienceList: [],
-            stats: {
-              활력마나량: Math.floor(Math.random() * 11) + 88,
-              피로무력화: Math.floor(Math.random() * 11) + 85,
-              생체밸런스: Math.floor(Math.random() * 11) + 82,
-            },
-          };
-        } else {
-          const count = selectedMaterials.length;
-          const roll = Math.random() * 100;
-          let grade: 'Common' | 'Rare' | 'Epic' | 'Prismatic' = 'Common';
-          
-          if (count === 0) grade = roll < 70 ? 'Common' : 'Rare';
-          else if (count === 1) grade = roll < 40 ? 'Common' : roll < 85 ? 'Rare' : 'Epic';
-          else grade = roll < 15 ? 'Common' : roll < 60 ? 'Rare' : roll < 90 ? 'Epic' : 'Prismatic';
-
-          const base = grade === 'Prismatic' ? 90 : grade === 'Epic' ? 80 : grade === 'Rare' ? 68 : 55;
-          const randPrefix = ['새벽의', '찬란한', '심연의', '영롱한'][Math.floor(Math.random() * 4)];
-
-          finalElixir = {
-            id: `elixir_proc_${Date.now()}`,
-            name: `${randPrefix} ${grade === 'Prismatic' ? '무지개빛 초월 영약' : '활력의 정수 비약'}`,
-            grade: grade,
-            themeCategory: '피로/에너지', // 💡 4대 테마 규격 준수
-            imageSource: getElixirImage(grade === 'Prismatic' ? 'fatigue_01' : 'skin_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
-            isUnlocked: true,
-            serialNumber: grade === 'Prismatic' ? `#PRISMATIC_${Math.floor(100 + Math.random() * 900)}` : undefined,
-            supplementSummary: todaySupplements.length > 0 ? todaySupplements.map((s) => s.name).join(', ') : '인증된 활력 복합체',
-            ingredientSummary: matNames.length > 0 ? matNames.join(', ') : '기본 촉매 마력',
-            brewingLore: '가마솥 안에서 연금술 반응이 일어나며 고유한 성질을 지닌 비약이 추출되었습니다.',
-            adviserComment: grade === 'Prismatic' ? '전설 등급의 무지개빛 프리즘 비약이 연성되었어!' : '신선하고 강력한 비약이야!',
-            recipeHint: '절차형 연금술 합성 공식',
-            scienceDesc: '투입된 성분의 활성 작용기가 체내 대사 부스팅을 유도합니다.',
-            ingredientScienceList: [],
-            stats: {
-              신체활력도: Math.min(100, base + Math.floor(Math.random() * 10)),
-              대사가속력: Math.min(100, base + Math.floor(Math.random() * 10) - 2),
-              피로저항도: Math.min(100, base + Math.floor(Math.random() * 10) + 1),
-            },
-          };
-        }
-      }
-
-      // 4. 연성 연출 후 결과 반영
-      setTimeout(() => {
-        setIsBrewing(false);
-        setResultElixir(finalElixir);
-        setSelectedMaterials([]);
-      }, 1800);
-    } catch (error: any) {
-      setIsBrewing(false);
-      Alert.alert('연성 실패', error.message || '엘릭서 연성 중 오류가 발생했습니다.');
+  try {
+    // 1. 브라우저 / 앱 스토리지에서 실제 JWT 토큰 추출
+    
+    // 🧪 토큰 가져오기 (AsyncStorage 없이 브라우저 스토리지 직접 조회)
+    let token = '';
+    if (typeof window !== 'undefined' && window.localStorage) {
+    token = localStorage.getItem('jwtToken') || '';
     }
-  };
+
+    console.log('📌 [연성 요청] 발송할 JWT 토큰:', token);
+
+    // 2. 선택된 재료 ID 파싱 ('m1' -> 1)
+    const numericIds = selectedMaterials.map((id, idx) => {
+      const parsed = parseInt(String(id).replace(/[^0-9]/g, ''), 10);
+      return isNaN(parsed) ? idx + 1 : parsed;
+    });
+
+    // 3. 백엔드 POST /api/synthesize API 호출
+    const BASE_URL = 'https://1-201-116-227.sslip.io'; // 운영 서버 주소
+    const requestPayload = {
+      ingredientCardIds: numericIds,
+      themeCategory: 'FATIGUE_ENERGY',
+    };
+
+    console.log('🚀 [연성 요청] 전송 데이터:', requestPayload);
+
+    const response = await fetch(`${BASE_URL}/api/synthesize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(requestPayload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `서버 에러 (${response.status})`);
+    }
+
+    const backendRes = await response.json();
+    console.log('✨ [연성 완료] 백엔드 응답 데이터:', backendRes);
+
+    // 4. 백엔드 응답 데이터를 프론트엔드 카드 규격으로 변환
+    let formattedGrade: 'Common' | 'Rare' | 'Epic' | 'Prismatic' = 'Epic';
+    if (backendRes.grade === 'PRISMATIC_LEGENDARY') formattedGrade = 'Prismatic';
+    else if (backendRes.grade === 'COMMON') formattedGrade = 'Common';
+    else if (backendRes.grade === 'RARE') formattedGrade = 'Rare';
+
+    const finalElixir: ElixirCardData = {
+      id: `elixir_${backendRes.id}`,
+      name: backendRes.name,
+      grade: formattedGrade,
+      themeCategory: '피로/에너지',
+      imageUrl: backendRes.imageUrl,
+      imageSource: getElixirImage(backendRes.id === 5 ? 'fatigue_01' : 'skin_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
+      isUnlocked: true,
+      serialNumber: backendRes.serialNumber ? `#${backendRes.serialNumber}` : undefined,
+      supplementSummary:
+        todaySupplements.length > 0
+          ? todaySupplements.map((s) => s.name).join(' + ')
+          : '오늘 인증된 영양제 복합체',
+      ingredientSummary: backendRes.ingredientSummary || `투입 재료 ${selectedMaterials.length}종`,
+      brewingLore: backendRes.cardDescription || '가마솥 안에서 신비로운 기운이 피어오르며 특별한 비약이 완성되었습니다.',
+      adviserComment: backendRes.adviserComment || '훌륭한 연성 결과물이야!',
+      recipeHint: '특수 성분 배합 시너지',
+      scienceDesc: backendRes.scientificExplanation || '신체 대사 활성화 및 건강 증진 효과',
+      ingredientScienceList: [],
+      stats: backendRes.stats || { 활력마나량: 85, 피로무력화: 80, 대사가속도: 75 },
+    };
+
+    // 5. 결과 모달 세팅 및 선택 재료 초기화
+    setTimeout(() => {
+      setIsBrewing(false);
+      setResultElixir(finalElixir);
+      setSelectedMaterials([]);
+    }, 1800);
+
+  } catch (error: any) {
+    console.warn('⚠️ 연성 API 실패 -> 스마트 Fallback 가동:', error.message);
+
+    // 서버 미연결 시 데모가 중단되지 않도록 Fallback 카드 생성
+    const fallbackElixir: ElixirCardData = {
+      id: `elixir_5_${Date.now()}`,
+      name: '온전한 조화의 황금 엘릭서',
+      grade: 'Epic',
+      themeCategory: '피로/에너지',
+      imageSource: getElixirImage('fatigue_01') || (MOCK_ELIXIRS[0]?.imageSource as any),
+      isUnlocked: true,
+      serialNumber: `#${Math.floor(1000 + Math.random() * 9000)}`,
+      supplementSummary: todaySupplements.length > 0 ? todaySupplements.map((s) => s.name).join(' + ') : '황금 레몬 + 심해 오일 + 안정석 + 유산균',
+      ingredientSummary: '황금 레몬, 심해 오일, 안정석, 황금 포자',
+      brewingLore: '가마솥 안에서 눈부신 황금빛 소용돌이가 일어나며 전신의 활력과 면역을 극대화하는 온전한 조화의 비약이 탄생했습니다!',
+      adviserComment: '늘해랑: "모든 성분과 재료가 한 치의 오차도 없이 완벽한 조화를 이루었어!"',
+      recipeHint: '황금 레몬 + 심해 오일 + 안정석 + 유산균 공식',
+      scienceDesc: '비타민C의 항산화, 마그네슘의 신경 이완, 오메가3의 순환 촉진이 복합 시너지를 일으켜 전신 대사를 정상화합니다.',
+      ingredientScienceList: [],
+      stats: {
+        활력마나량: 95,
+        피로무력화: 90,
+        생체밸런스: 92,
+      },
+    };
+
+    setTimeout(() => {
+      setIsBrewing(false);
+      setResultElixir(fallbackElixir);
+      setSelectedMaterials([]);
+    }, 1800);
+  }
+};
 
 
   const handleSaveToCodex = () => {
